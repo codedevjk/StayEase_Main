@@ -1,0 +1,61 @@
+spring:
+  application:
+    name: stayease-property-service
+
+  datasource:
+    url: ${STAYEASE_PROPERTY_DB_URL:jdbc:mysql://localhost:3306/stayease_property_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
+    username: ${STAYEASE_PROPERTY_DB_USER:stayease_property}
+    password: ${STAYEASE_PROPERTY_DB_PASSWORD:REPLACE_ME_SET_IN_LOCAL_ENV}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      pool-name: PropertyServicePool
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 20000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+
+  cloud:
+    consul:
+      host: localhost
+      port: 8500
+      discovery:
+        service-name: stayease-property-service
+        health-check-path: /actuator/health
+        health-check-interval: 10s
+        instance-id: ${spring.application.name}:${server.port}
+
+server:
+  port: 8082
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics
+  endpoint:
+    health:
+      show-details: always
+
+stayease:
+  jwt:
+    secret: ${JWT_SECRET:REPLACE_ME_THIS_PLACEHOLDER_CAUSES_STARTUP_FAILURE_IN_PRODUCTION}
+    expiration-seconds: 900
+    issuer: stayease
+  # Internal User Service endpoint for tokenVersion lookups
+  internal:
+    user-service-url: lb://stayease-user-service
+  time-zone: Asia/Kolkata
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [correlationId=%X{correlationId}] %-5level %logger{36} - %msg%n"
+  level:
+    com.stayease: DEBUG

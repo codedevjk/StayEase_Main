@@ -1,0 +1,135 @@
+spring:
+  application:
+    name: stayease-gateway
+
+  # ── Spring Cloud Gateway routes ─────────────────────────────────────────
+  cloud:
+    gateway:
+      # Enable reactive load-balancing via Consul discovery
+      discovery:
+        locator:
+          enabled: false          # Manual routes only; no auto-discovery routes exposed
+          lower-case-service-id: true
+
+      # ── Route definitions ────────────────────────────────────────────────
+      routes:
+
+        # ── User Service ────────────────────────────────────────────────
+        - id: user-service-auth
+          uri: lb://stayease-user-service
+          predicates:
+            - Path=/api/auth/**
+          filters:
+            - RewritePath=/api/(?<segment>.*), /api/${segment}
+
+        - id: user-service-users
+          uri: lb://stayease-user-service
+          predicates:
+            - Path=/api/users/**, /api/admin/users/**
+          filters:
+            - RewritePath=/api/(?<segment>.*), /api/${segment}
+
+        # ── Property Service ────────────────────────────────────────────
+        - id: property-service
+          uri: lb://stayease-property-service
+          predicates:
+            - Path=/api/hotels/**, /api/admin/hotels/**, /api/admin/rooms/**, /api/admin/room-types/**
+          filters:
+            - RewritePath=/api/(?<segment>.*), /api/${segment}
+
+        # ── Reservation Service ─────────────────────────────────────────
+        - id: reservation-service
+          uri: lb://stayease-reservation-service
+          predicates:
+            - Path=/api/reservations/**, /api/admin/reservations/**, /api/admin/dashboard
+          filters:
+            - RewritePath=/api/(?<segment>.*), /api/${segment}
+
+        # ── Review Service ──────────────────────────────────────────────
+        - id: review-service
+          uri: lb://stayease-review-service
+          predicates:
+            - Path=/api/reviews/**, /api/admin/reviews/**
+          filters:
+            - RewritePath=/api/(?<segment>.*), /api/${segment}
+
+        # ── Admin audit endpoints (all services) ────────────────────────
+        - id: user-audit
+          uri: lb://stayease-user-service
+          predicates:
+            - Path=/api/admin/audit/users
+          filters:
+            - RewritePath=/api/admin/audit/users, /api/admin/audit
+
+        - id: property-audit
+          uri: lb://stayease-property-service
+          predicates:
+            - Path=/api/admin/audit/properties
+          filters:
+            - RewritePath=/api/admin/audit/properties, /api/admin/audit
+
+        - id: reservation-audit
+          uri: lb://stayease-reservation-service
+          predicates:
+            - Path=/api/admin/audit/reservations
+          filters:
+            - RewritePath=/api/admin/audit/reservations, /api/admin/audit
+
+        - id: review-audit
+          uri: lb://stayease-review-service
+          predicates:
+            - Path=/api/admin/audit/reviews
+          filters:
+            - RewritePath=/api/admin/audit/reviews, /api/admin/audit
+
+      # ── Global CORS ──────────────────────────────────────────────────────
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins:
+              - "http://localhost:4200"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - PATCH
+              - DELETE
+              - OPTIONS
+            allowedHeaders:
+              - "*"
+            exposedHeaders:
+              - X-Correlation-ID
+            allowCredentials: true
+            maxAge: 3600
+
+    # ── Consul registration ────────────────────────────────────────────────
+    consul:
+      host: localhost
+      port: 8500
+      discovery:
+        service-name: stayease-gateway
+        health-check-path: /actuator/health
+        health-check-interval: 10s
+        instance-id: ${spring.application.name}:${server.port}
+
+# ── Server port ─────────────────────────────────────────────────────────────
+server:
+  port: 8080
+
+# ── Actuator ─────────────────────────────────────────────────────────────────
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info
+  endpoint:
+    health:
+      show-details: always
+
+# ── Logging ──────────────────────────────────────────────────────────────────
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [correlationId=%X{correlationId}] %-5level %logger{36} - %msg%n"
+  level:
+    com.stayease: DEBUG
+    org.springframework.cloud.gateway: INFO

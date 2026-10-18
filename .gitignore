@@ -1,0 +1,99 @@
+# ───────────────────────────────────────────────
+# StayEase .gitignore
+# Java 21 / Spring Boot 3 / Maven / Angular 16
+# ───────────────────────────────────────────────
+
+# ─── Build output ──────────────────────────────
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# ─── Maven wrapper ─────────────────────────────
+.mvn/wrapper/maven-wrapper.properties
+# keep: .mvn/wrapper/maven-wrapper.jar
+
+# ─── Compiled class files ──────────────────────
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+
+# ─── Logs ──────────────────────────────────────
+logs/
+*.log
+*.log.*
+
+# ─── Spring Boot devtools ──────────────────────
+.spring-boot-devtools.properties
+spring-devtools.properties
+
+# ─── Local / environment configuration files ───
+# Template files (.example) ARE committed.
+# Actual local files with real secrets are NOT.
+**/application-local.yml
+**/application-local.yaml
+**/application-local.properties
+**/application-secrets.yml
+**/application-secrets.yaml
+**/application-secrets.properties
+**/.env
+**/.env.*
+!**/.env.example
+
+# ─── Secret / credential files ─────────────────
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+jwt_secret.txt
+
+# ─── IDEs ──────────────────────────────────────
+.idea/
+*.iml
+*.iws
+.project
+.classpath
+.settings/
+*.eclipse
+.sts4-cache/
+.factorypath
+.metadata/
+bin/
+
+# ─── VS Code ───────────────────────────────────
+.vscode/settings.json
+.vscode/launch.json
+# keep: .vscode/extensions.json
+
+# ─── OS-generated files ────────────────────────
+.DS_Store
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ─── Angular / Node ────────────────────────────
+stayease-ui/node_modules/
+stayease-ui/dist/
+stayease-ui/.angular/
+stayease-ui/.sass-cache/
+stayease-ui/npm-debug.log*
+stayease-ui/yarn-error.log*
+
+# ─── SonarQube ─────────────────────────────────
+.sonar/
+.scannerwork/
+
+# ─── Postman ───────────────────────────────────
+# Postman environment files may contain tokens; keep only templates.
+postman/*environment*.json
+!postman/*environment*.example.json
+
+# ─── Docker (not in scope but guard anyway) ────
+*.dockerignore
+
+# ─── Scratch / temp ────────────────────────────
+scratch/
+tmp/

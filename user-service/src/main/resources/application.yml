@@ -1,0 +1,79 @@
+spring:
+  application:
+    name: stayease-user-service
+
+  # ── Database ─────────────────────────────────────────────────────────────
+  datasource:
+    # Real credentials supplied via environment variables — NEVER hardcoded here.
+    # Set STAYEASE_USER_DB_URL, STAYEASE_USER_DB_USER, STAYEASE_USER_DB_PASSWORD
+    # in your local shell or application-local.yml (which is git-ignored).
+    url: ${STAYEASE_USER_DB_URL:jdbc:mysql://localhost:3306/stayease_user_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
+    username: ${STAYEASE_USER_DB_USER:stayease_user}
+    password: ${STAYEASE_USER_DB_PASSWORD:REPLACE_ME_SET_IN_LOCAL_ENV}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      pool-name: UserServicePool
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 20000
+
+  # ── JPA / Hibernate ───────────────────────────────────────────────────────
+  jpa:
+    hibernate:
+      ddl-auto: validate            # Schema managed by schema.sql; never auto-create
+    show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+
+  # ── Consul discovery ──────────────────────────────────────────────────────
+  cloud:
+    consul:
+      host: localhost
+      port: 8500
+      discovery:
+        service-name: stayease-user-service
+        health-check-path: /actuator/health
+        health-check-interval: 10s
+        instance-id: ${spring.application.name}:${server.port}
+
+# ── Server ────────────────────────────────────────────────────────────────────
+server:
+  port: 8081
+
+# ── Actuator ──────────────────────────────────────────────────────────────────
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics
+  endpoint:
+    health:
+      show-details: always
+
+# ── JWT ───────────────────────────────────────────────────────────────────────
+# The signing secret MUST be supplied via the JWT_SECRET environment variable.
+# It must be a Base64-encoded HMAC-SHA256 key of at least 256 bits (32 bytes).
+# NEVER commit a real key here. The placeholder below will cause an application
+# startup failure if not overridden, which is intentional fail-safe behavior.
+stayease:
+  jwt:
+    secret: ${JWT_SECRET:REPLACE_ME_THIS_PLACEHOLDER_CAUSES_STARTUP_FAILURE_IN_PRODUCTION}
+    expiration-seconds: 900          # 15 minutes — do not change without updating contracts
+    issuer: stayease
+  admin-bootstrap:
+    # AdminBootstrapRunner executes ONLY when this property is explicitly set to true.
+    # Leave false (or absent) in all normal environments including local development.
+    # Enable only once, via a local shell export, to seed the first administrator.
+    enabled: ${STAYEASE_BOOTSTRAP_ADMIN_ENABLED:false}
+  time-zone: Asia/Kolkata
+
+# ── Logging ───────────────────────────────────────────────────────────────────
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [correlationId=%X{correlationId}] %-5level %logger{36} - %msg%n"
+  level:
+    com.stayease: DEBUG
+    org.springframework.security: INFO

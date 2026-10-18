@@ -1,0 +1,13 @@
+﻿# Normalize line endings
+* text=auto eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary files
+*.docx binary
+*.pdf  binary
+*.jar  binary
+*.class binary
+*.png  binary
+*.jpg  binary
+*.webp binary

@@ -1,0 +1,99 @@
+spring:
+  application:
+    name: stayease-reservation-service
+
+  datasource:
+    url: ${STAYEASE_RESERVATION_DB_URL:jdbc:mysql://localhost:3306/stayease_reservation_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
+    username: ${STAYEASE_RESERVATION_DB_USER:stayease_reservation}
+    password: ${STAYEASE_RESERVATION_DB_PASSWORD:REPLACE_ME_SET_IN_LOCAL_ENV}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      pool-name: ReservationServicePool
+      maximum-pool-size: 15          # Higher for concurrent booking traffic
+      minimum-idle: 3
+      connection-timeout: 20000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+
+  cloud:
+    consul:
+      host: localhost
+      port: 8500
+      discovery:
+        service-name: stayease-reservation-service
+        health-check-path: /actuator/health
+        health-check-interval: 10s
+        instance-id: ${spring.application.name}:${server.port}
+
+server:
+  port: 8083
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics
+  endpoint:
+    health:
+      show-details: always
+
+stayease:
+  jwt:
+    secret: ${JWT_SECRET:REPLACE_ME_THIS_PLACEHOLDER_CAUSES_STARTUP_FAILURE_IN_PRODUCTION}
+    expiration-seconds: 900
+    issuer: stayease
+
+  pricing:
+    # Default tax rate applied to lodging subtotal. Keep configurable; training default only.
+    tax-percentage: 12.00
+
+  inventory:
+    # Duration in minutes for a prepaid reservation hold.
+    hold-duration-minutes: 10
+    # Interval in seconds at which the hold-expiry scheduler runs.
+    expiry-check-interval-seconds: 60
+
+  internal:
+    user-service-url: lb://stayease-user-service
+    property-service-url: lb://stayease-property-service
+
+  time-zone: Asia/Kolkata
+  check-in-time: "14:00:00"
+  check-out-time: "11:00:00"
+
+# ── Resilience4j circuit breakers ────────────────────────────────────────────
+resilience4j:
+  circuitbreaker:
+    instances:
+      property-service:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+      user-service:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 3
+  timelimiter:
+    instances:
+      property-service:
+        timeoutDuration: 3s
+      user-service:
+        timeoutDuration: 2s
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [correlationId=%X{correlationId}] %-5level %logger{36} - %msg%n"
+  level:
+    com.stayease: DEBUG
