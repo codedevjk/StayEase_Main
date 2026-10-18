@@ -188,17 +188,56 @@ To initialize the initial administrator locally:
 
 ---
 
-## 6. Manual Infrastructure Checks Still Outstanding
+## 6. CourseCart Architectural Reference Alignment & Infrastructure Setup
 
-In accordance with Section 7 (Infrastructure Safety):
+Following the syllabus-aligned reference architecture in `J:\Capstone\CourseCart`:
+1. **Database Script Locations (`src/main/resources`):**
+   - Each microservice keeps its standalone, self-contained SQL file directly inside its `src/main/resources/`:
+     - `user-service/src/main/resources/user_db.sql`
+     - `property-service/src/main/resources/property_db.sql`
+     - `reservation-service/src/main/resources/reservation_db.sql`
+     - `review-service/src/main/resources/review_db.sql`
+   - Each script contains `CREATE DATABASE IF NOT EXISTS <db>; USE <db>;` along with table DDLs, foreign key constraints, indexes, and reference seeds.
+   - The user runs these SQL scripts directly against their local MySQL database server (`localhost:3306`).
+2. **Spring Cloud Consul Setup (Manual Execution):**
+   - The user starts the local Consul agent manually on `localhost:8500` (`consul agent -dev`).
+   - All services (`gateway-service`, `user-service`, `property-service`, `reservation-service`, `review-service`) configure `spring.cloud.consul.host: localhost` and `port: 8500` with `prefer-ip-address: true`.
+3. **Inter-Service Communication (`WebClient.Builder` Bean in `AppConfig`):**
+   - As in CourseCart, each service now features a dedicated `config/AppConfig.java` containing:
+     ```java
+     @Bean
+     @LoadBalanced
+     public WebClient.Builder webClientBuilder() {
+         return WebClient.builder();
+     }
+     ```
+   - This enables non-blocking, load-balanced inter-service HTTP communication via Consul service IDs (e.g. `http://user-service`), strictly adhering to university/syllabus requirements.
+4. **Offline Test Isolation:**
+   - Automated tests (`mvn clean test`) use an isolated H2 test profile (`application-test.yml`) with `spring.cloud.consul.enabled=false` and `spring.sql.init.mode=never`. Tests never fail due to offline MySQL or Consul.
+
+---
+
+## 7. Manual Infrastructure Runtime Instructions
+
 1. **MySQL Database Initialization:**
-   - The user must manually execute `database/stayease_user_db/schema.sql` on their local MySQL instance (`localhost:3306`) when preparing for runtime end-to-end execution.
-   - User Service runs with `jpa.hibernate.ddl-auto=validate`, requiring the schema to be initialized prior to live service startup.
+   - Execute the database script inside each service's resources:
+     ```powershell
+     mysql -u root -p < user-service/src/main/resources/user_db.sql
+     mysql -u root -p < property-service/src/main/resources/property_db.sql
+     mysql -u root -p < reservation-service/src/main/resources/reservation_db.sql
+     mysql -u root -p < review-service/src/main/resources/review_db.sql
+     ```
 2. **Consul Service Discovery:**
-   - Consul agent (`localhost:8500`) must be running before live inter-service discovery can occur.
-   - For all Phase 2 automated Maven unit and integration tests, Consul was cleanly disabled via the test profile (`spring.cloud.consul.enabled=false`), allowing 100% automated test execution without external dependencies.
-3. **Environment Secret:**
-   - For local runtime execution, the user must provide `JWT_SECRET` (at least 256 bits). In tests, a dedicated Base64-encoded test secret was used.
+   - Launch your local Consul agent:
+     ```powershell
+     consul agent -dev
+     ```
+   - Verify Consul UI at `http://localhost:8500/ui`.
+3. **JWT Secret Configuration:**
+   - Set the runtime environment variable:
+     ```powershell
+     $env:JWT_SECRET = "your-256-bit-secret-key-must-be-at-least-32-characters-long"
+     ```
 
 ---
 
