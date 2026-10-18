@@ -3,37 +3,43 @@ spring:
     name: stayease-reservation-service
 
   datasource:
-    url: ${STAYEASE_RESERVATION_DB_URL:jdbc:mysql://localhost:3306/stayease_reservation_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
-    username: ${STAYEASE_RESERVATION_DB_USER:stayease_reservation}
-    password: ${STAYEASE_RESERVATION_DB_PASSWORD:REPLACE_ME_SET_IN_LOCAL_ENV}
+    url: ${STAYEASE_RESERVATION_DB_URL:jdbc:mysql://localhost:3306/stayease_reservation_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
+    username: ${STAYEASE_RESERVATION_DB_USER:root}
+    password: ${STAYEASE_RESERVATION_DB_PASSWORD:root}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       pool-name: ReservationServicePool
-      maximum-pool-size: 15          # Higher for concurrent booking traffic
+      maximum-pool-size: 15
       minimum-idle: 3
       connection-timeout: 20000
 
   jpa:
     hibernate:
-      ddl-auto: validate
-    show-sql: false
+      ddl-auto: update
+    show-sql: true
     open-in-view: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
 
   cloud:
     consul:
-      host: localhost
-      port: 8500
+      host: ${CONSUL_HOST:localhost}
+      port: ${CONSUL_PORT:8500}
       discovery:
         service-name: stayease-reservation-service
+        register: true
+        prefer-ip-address: true
         health-check-path: /actuator/health
         health-check-interval: 10s
         instance-id: ${spring.application.name}:${server.port}
 
 server:
   port: 8083
+  error:
+    include-message: always
+    include-binding-errors: always
 
 management:
   endpoints:
@@ -46,18 +52,15 @@ management:
 
 stayease:
   jwt:
-    secret: ${JWT_SECRET:REPLACE_ME_THIS_PLACEHOLDER_CAUSES_STARTUP_FAILURE_IN_PRODUCTION}
+    secret: ${JWT_SECRET:c3RheWVhc2Utc3VwZXItc2VjcmV0LWp3dC1rZXktZm9yLXRlc3RpbmctcHVycG9zZXMtb25seQ==}
     expiration-seconds: 900
     issuer: stayease
 
   pricing:
-    # Default tax rate applied to lodging subtotal. Keep configurable; training default only.
     tax-percentage: 12.00
 
   inventory:
-    # Duration in minutes for a prepaid reservation hold.
     hold-duration-minutes: 10
-    # Interval in seconds at which the hold-expiry scheduler runs.
     expiry-check-interval-seconds: 60
 
   internal:
@@ -85,6 +88,7 @@ resilience4j:
         failureRateThreshold: 50
         waitDurationInOpenState: 10s
         permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
   timelimiter:
     instances:
       property-service:

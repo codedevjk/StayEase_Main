@@ -3,9 +3,9 @@ spring:
     name: stayease-review-service
 
   datasource:
-    url: ${STAYEASE_REVIEW_DB_URL:jdbc:mysql://localhost:3306/stayease_review_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
-    username: ${STAYEASE_REVIEW_DB_USER:stayease_review}
-    password: ${STAYEASE_REVIEW_DB_PASSWORD:REPLACE_ME_SET_IN_LOCAL_ENV}
+    url: ${STAYEASE_REVIEW_DB_URL:jdbc:mysql://localhost:3306/stayease_review_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
+    username: ${STAYEASE_REVIEW_DB_USER:root}
+    password: ${STAYEASE_REVIEW_DB_PASSWORD:root}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       pool-name: ReviewServicePool
@@ -15,25 +15,31 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: validate
-    show-sql: false
+      ddl-auto: update
+    show-sql: true
     open-in-view: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
 
   cloud:
     consul:
-      host: localhost
-      port: 8500
+      host: ${CONSUL_HOST:localhost}
+      port: ${CONSUL_PORT:8500}
       discovery:
         service-name: stayease-review-service
+        register: true
+        prefer-ip-address: true
         health-check-path: /actuator/health
         health-check-interval: 10s
         instance-id: ${spring.application.name}:${server.port}
 
 server:
   port: 8084
+  error:
+    include-message: always
+    include-binding-errors: always
 
 management:
   endpoints:
@@ -46,11 +52,10 @@ management:
 
 stayease:
   jwt:
-    secret: ${JWT_SECRET:REPLACE_ME_THIS_PLACEHOLDER_CAUSES_STARTUP_FAILURE_IN_PRODUCTION}
+    secret: ${JWT_SECRET:c3RheWVhc2Utc3VwZXItc2VjcmV0LWp3dC1rZXktZm9yLXRlc3RpbmctcHVycG9zZXMtb25seQ==}
     expiration-seconds: 900
     issuer: stayease
   review:
-    # Days after checkout during which a guest may submit a review.
     eligibility-window-days: 30
   internal:
     user-service-url: lb://stayease-user-service

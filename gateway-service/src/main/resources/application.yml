@@ -104,10 +104,12 @@ spring:
 
     # ── Consul registration ────────────────────────────────────────────────
     consul:
-      host: localhost
-      port: 8500
+      host: ${CONSUL_HOST:localhost}
+      port: ${CONSUL_PORT:8500}
       discovery:
         service-name: stayease-gateway
+        register: true
+        prefer-ip-address: true
         health-check-path: /actuator/health
         health-check-interval: 10s
         instance-id: ${spring.application.name}:${server.port}

@@ -59,6 +59,12 @@
             <artifactId>spring-cloud-starter-consul-discovery</artifactId>
         </dependency>
 
+        <!-- WebClient for non-blocking inter-service HTTP calls -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
+        </dependency>
+
         <!-- JJWT — token creation and validation -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>

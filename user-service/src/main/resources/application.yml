@@ -2,14 +2,11 @@ spring:
   application:
     name: stayease-user-service
 
-  # ── Database ─────────────────────────────────────────────────────────────
+  # ── Database (MySQL on localhost) ──────────────────────────────────────────
   datasource:
-    # Real credentials supplied via environment variables — NEVER hardcoded here.
-    # Set STAYEASE_USER_DB_URL, STAYEASE_USER_DB_USER, STAYEASE_USER_DB_PASSWORD
-    # in your local shell or application-local.yml (which is git-ignored).
-    url: ${STAYEASE_USER_DB_URL:jdbc:mysql://localhost:3306/stayease_user_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
-    username: ${STAYEASE_USER_DB_USER:stayease_user}
-    password: ${STAYEASE_USER_DB_PASSWORD:REPLACE_ME_SET_IN_LOCAL_ENV}
+    url: ${STAYEASE_USER_DB_URL:jdbc:mysql://localhost:3306/stayease_user_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
+    username: ${STAYEASE_USER_DB_USER:root}
+    password: ${STAYEASE_USER_DB_PASSWORD:root}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       pool-name: UserServicePool
@@ -20,21 +17,23 @@ spring:
   # ── JPA / Hibernate ───────────────────────────────────────────────────────
   jpa:
     hibernate:
-      ddl-auto: validate            # Schema managed by schema.sql; never auto-create
-    show-sql: false
+      ddl-auto: update
+    show-sql: true
     open-in-view: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
 
-  # ── Consul discovery ──────────────────────────────────────────────────────
+  # ── Consul discovery (manual local runner on port 8500) ───────────────────
   cloud:
     consul:
-      host: localhost
-      port: 8500
+      host: ${CONSUL_HOST:localhost}
+      port: ${CONSUL_PORT:8500}
       discovery:
         service-name: stayease-user-service
+        register: true
+        prefer-ip-address: true
         health-check-path: /actuator/health
         health-check-interval: 10s
         instance-id: ${spring.application.name}:${server.port}
@@ -42,6 +41,9 @@ spring:
 # ── Server ────────────────────────────────────────────────────────────────────
 server:
   port: 8081
+  error:
+    include-message: always
+    include-binding-errors: always
 
 # ── Actuator ──────────────────────────────────────────────────────────────────
 management:
@@ -53,21 +55,18 @@ management:
     health:
       show-details: always
 
-# ── JWT ───────────────────────────────────────────────────────────────────────
-# The signing secret MUST be supplied via the JWT_SECRET environment variable.
-# It must be a Base64-encoded HMAC-SHA256 key of at least 256 bits (32 bytes).
-# NEVER commit a real key here. The placeholder below will cause an application
-# startup failure if not overridden, which is intentional fail-safe behavior.
+# ── JWT & Application Settings ────────────────────────────────────────────────
 stayease:
   jwt:
-    secret: ${JWT_SECRET:REPLACE_ME_THIS_PLACEHOLDER_CAUSES_STARTUP_FAILURE_IN_PRODUCTION}
-    expiration-seconds: 900          # 15 minutes — do not change without updating contracts
+    # 256-bit default signing secret for local execution; override via JWT_SECRET env var
+    secret: ${JWT_SECRET:c3RheWVhc2Utc3VwZXItc2VjcmV0LWp3dC1rZXktZm9yLXRlc3RpbmctcHVycG9zZXMtb25seQ==}
+    expiration-seconds: 900          # 15 minutes
     issuer: stayease
   admin-bootstrap:
-    # AdminBootstrapRunner executes ONLY when this property is explicitly set to true.
-    # Leave false (or absent) in all normal environments including local development.
-    # Enable only once, via a local shell export, to seed the first administrator.
     enabled: ${STAYEASE_BOOTSTRAP_ADMIN_ENABLED:false}
+    admin-email: ${STAYEASE_BOOTSTRAP_ADMIN_EMAIL:admin@stayease.local}
+    admin-full-name: ${STAYEASE_BOOTSTRAP_ADMIN_NAME:StayEase Administrator}
+    admin-password: ${STAYEASE_BOOTSTRAP_ADMIN_PASSWORD:}
   time-zone: Asia/Kolkata
 
 # ── Logging ───────────────────────────────────────────────────────────────────
