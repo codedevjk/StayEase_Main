@@ -1,40 +1,36 @@
 package com.stayease.user.bootstrap;
 
+import com.stayease.user.entity.User;
+import com.stayease.user.repository.UserRepository;
+import com.stayease.user.service.UserAuditService;
+import com.stayease.user.util.PasswordGenerator;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
 
 /**
- * Admin bootstrap runner — seeds the initial ADMIN account.
+ * Admin bootstrap runner — seeds the initial ADMIN account safely.
  *
  * <h2>Safety Constraints</h2>
  * <ul>
- *   <li>This component is disabled by default and will NOT activate unless
- *       the property {@code stayease.admin-bootstrap.enabled=true} is
- *       explicitly set in the local environment or application-local.yml.</li>
- *   <li>It must NEVER be enabled in CI, staging, or production environments.</li>
- *   <li>SQL seed files must NOT contain a reusable plaintext password.</li>
- *   <li>The generated temporary password is printed ONCE to stdout and NEVER
- *       written to log files, audit records, or source control.</li>
+ *   <li>Disabled by default. Activates ONLY when {@code stayease.admin-bootstrap.enabled=true}
+ *       is explicitly provided in the local environment.</li>
+ *   <li>Never enabled in CI, staging, or production environments.</li>
+ *   <li>The generated one-time temporary password is printed strictly to standard output
+ *       and is NEVER written to log files, audit tables, or committed to Git.</li>
  * </ul>
- *
- * <h2>Usage (Local Development Only)</h2>
- * <ol>
- *   <li>Copy {@code application-local.yml.example} to {@code application-local.yml}.</li>
- *   <li>Set {@code stayease.admin-bootstrap.enabled=true}.</li>
- *   <li>Set {@code stayease.admin-bootstrap.admin-email} to the desired admin email.</li>
- *   <li>Start user-service with the {@code local} Spring profile active.</li>
- *   <li>Capture the one-time password printed to console.</li>
- *   <li>Immediately set {@code enabled=false} and restart.</li>
- * </ol>
- *
- * <p><strong>Phase 1 status:</strong> Skeleton only.
- * Full implementation (BCrypt hash generation, admin persistence) is part of Phase 2.
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 @ConditionalOnProperty(
         name = "stayease.admin-bootstrap.enabled",
         havingValue = "true",
@@ -42,30 +38,79 @@ import org.springframework.stereotype.Component;
 )
 public class AdminBootstrapRunner implements ApplicationRunner {
 
-    /*
-     * Phase 2 will @Autowire UserRepository and PasswordEncoder here.
-     * Keeping dependencies minimal in Phase 1 to avoid premature wiring.
-     */
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final UserAuditService auditService;
+
+    @Value("${stayease.admin-bootstrap.admin-email:admin@stayease.local}")
+    private String adminEmail;
+
+    @Value("${stayease.admin-bootstrap.admin-full-name:StayEase Administrator}")
+    private String adminFullName;
+
+    @Value("${stayease.admin-bootstrap.admin-phone:9999999999}")
+    private String adminPhone;
+
+    @Value("${stayease.admin-bootstrap.admin-password:}")
+    private String configuredPassword;
 
     @Override
+    @Transactional
     public void run(ApplicationArguments args) {
         log.warn("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-        log.warn("AdminBootstrapRunner is ACTIVE — Phase 1 skeleton only.");
-        log.warn("Full implementation deferred to Phase 2.");
-        log.warn("Disable stayease.admin-bootstrap.enabled after bootstrapping.");
+        log.warn("AdminBootstrapRunner is ACTIVE.");
+        log.warn("Disable stayease.admin-bootstrap.enabled immediately after execution.");
         log.warn("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
-        // TODO (Phase 2): Implement the following steps:
-        //   1. Read admin email and full name from configuration properties.
-        //   2. Check if an admin account already exists for that email.
-        //   3. If not, generate a cryptographically secure temporary password using
-        //      SecureRandom (never use Math.random or UUID for passwords).
-        //   4. Hash the password using BCryptPasswordEncoder.
-        //   5. Persist the User entity with ROLE_ADMIN and tokenVersion = 1.
-        //   6. Print the one-time temporary password to System.out (NOT log.info,
-        //      which goes to log files). Format:
-        //        System.out.println("=== ADMIN BOOTSTRAP: one-time password: <password> ===");
-        //   7. Clear the in-memory password reference.
-        //   8. Throw if already existing admin detected to prevent accidental re-run.
+        String targetEmail = adminEmail.toLowerCase().trim();
+        Optional<User> existing = userRepository.findByEmail(targetEmail);
+        if (existing.isPresent()) {
+            log.warn("Administrator account with email '{}' already exists (ID: {}). Bootstrap aborted.",
+                    targetEmail, existing.get().getId());
+            return;
+        }
+
+        String rawPassword;
+        if (configuredPassword != null && !configuredPassword.isBlank()) {
+            rawPassword = configuredPassword.trim();
+        } else {
+            rawPassword = PasswordGenerator.generatePassword(16);
+        }
+
+        String passwordHash = passwordEncoder.encode(rawPassword);
+
+        User admin = User.builder()
+                .fullName(adminFullName)
+                .email(targetEmail)
+                .phone(adminPhone)
+                .address("StayEase Headquarters")
+                .passwordHash(passwordHash)
+                .role("ROLE_ADMIN")
+                .tokenVersion(1L)
+                .build();
+
+        User savedAdmin = userRepository.save(admin);
+
+        // Record audit event without the password
+        auditService.recordEvent(
+                0L,
+                "SYSTEM",
+                "AUTH",
+                "ADMIN_BOOTSTRAP",
+                String.valueOf(savedAdmin.getId()),
+                "Initial administrator seeded via AdminBootstrapRunner",
+                null,
+                null
+        );
+
+        // Disclose password ONLY to stdout (never to logger/files)
+        System.out.println("================================================================================");
+        System.out.println("=== STAYEASE ADMIN BOOTSTRAP SUCCESSFUL");
+        System.out.println("=== Admin Account Created: " + targetEmail + " (User ID: " + savedAdmin.getId() + ")");
+        System.out.println("=== Role: ROLE_ADMIN");
+        System.out.println("=== One-Time Bootstrap Password: " + rawPassword);
+        System.out.println("=== CAUTION: Record this password securely now. It will never be displayed again.");
+        System.out.println("=== Action Required: Set stayease.admin-bootstrap.enabled=false and restart.");
+        System.out.println("================================================================================");
     }
 }

@@ -46,16 +46,16 @@ StayEase enforces a strict **Verification Gate**: No component or phase is marke
 ## 2. Test Suites by Domain & Layer
 
 ### 2.1 Security, Authentication & Session Verification
-| Test ID | Test Category | Target Component | Verification Scenario | Expected Outcome |
-|---|---|---|---|---|
-| `SEC-01` | Unit | `UserRegistrationService` | Attempt registration with `role: "ADMIN"` in payload | Role is forced to `ROLE_USER`; cannot elevate privilege |
-| `SEC-02` | Integration | `UserController` | Register duplicate email | HTTP 409 Conflict; duplicate rejected; password hashed |
-| `SEC-03` | Integration | `AuthController` | Login with incorrect password | Generic HTTP 401: `"Invalid email or password"`; no account enumeration |
-| `SEC-04` | Security | `JwtTokenFilter` | Request with expired JWT or tampered signature | HTTP 401 Unauthorized; request rejected at filter |
-| `SEC-05` | Security | `UserSecurityInterceptor` | Request with old `tokenVersion` after password reset or email update | HTTP 401 Unauthorized; previous sessions immediately invalidated |
-| `SEC-06` | Security | `ReservationController` | Guest A attempts to view or cancel Guest B's reservation | HTTP 403 Forbidden; ownership check enforced |
-| `SEC-07` | Security | Gateway / All Services | Authenticated `ROLE_USER` accesses `/api/admin/*` | HTTP 403 Forbidden |
-| `SEC-08` | Integration | `AdminBootstrapRunner` | Verify SQL scripts or logs contain no plaintext passwords | Plaintext passwords absent from Git and logs |
+| Test ID | Test Category | Target Component | Verification Scenario | Expected Outcome | Phase 2 Status |
+|---|---|---|---|---|---|
+| `SEC-01` | Unit & Integration | `AuthService`, `UserControllerSecurityIntegrationTest` | Attempt registration with `role: "ADMIN"` in payload | Role is forced to `ROLE_USER`; cannot elevate privilege | ✅ Passed |
+| `SEC-02` | Integration | `UserControllerSecurityIntegrationTest` | Register duplicate email | HTTP 409 Conflict; duplicate rejected; password hashed with BCrypt (12) | ✅ Passed |
+| `SEC-03` | Integration | `AuthController`, `GlobalExceptionHandler` | Login with incorrect password or unknown email | Generic HTTP 401: `"Invalid email or password"`; no account enumeration | ✅ Passed |
+| `SEC-04` | Security | `JwtTokenFilter`, `JwtTokenProviderTest` | Request with expired JWT or tampered signature | HTTP 401 Unauthorized; request rejected at filter | ✅ Passed |
+| `SEC-05` | Security | `JwtAuthenticationFilter`, `UserControllerSecurityIntegrationTest` | Request with old `tokenVersion` after password reset or email update | HTTP 401 Unauthorized; previous sessions immediately invalidated | ✅ Passed |
+| `SEC-06` | Security | `UserControllerSecurityIntegrationTest` | Profile ownership enforcement; admin password reset | Request operates strictly on authenticated principal; admin reset increments tokenVersion | ✅ Passed |
+| `SEC-07` | Security | `SecurityConfig`, `UserControllerSecurityIntegrationTest` | Authenticated `ROLE_USER` accesses `/api/admin/*` | HTTP 403 Forbidden | ✅ Passed |
+| `SEC-08` | Integration | `AdminBootstrapRunner`, `AdminBootstrapRunnerTest` | Verify bootstrap and SQL scripts contain no plaintext passwords | Plaintext passwords absent from Git and logs; one-time stdout disclosure only | ✅ Passed |
 
 ### 2.2 Property, Search & Pricing Verification
 | Test ID | Test Category | Target Component | Verification Scenario | Expected Outcome |
