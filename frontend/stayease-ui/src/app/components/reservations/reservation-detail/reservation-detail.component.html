@@ -1,0 +1,178 @@
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4 no-print">
+    <div>
+      <a routerLink="/reservations" class="text-decoration-none small text-muted">
+        <i class="bi bi-arrow-left me-1"></i> Back to My Reservations
+      </a>
+      <h2 class="font-serif fw-bold text-dark mt-1 mb-0">Booking Summary & Invoice</h2>
+    </div>
+    <div class="d-flex gap-2" *ngIf="reservation">
+      <button *ngIf="reservation.status === 'CONFIRMED'" (click)="openAmendModal()" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-pencil-square me-1"></i> Amend Dates
+      </button>
+      <button (click)="printInvoice()" class="btn btn-primary btn-sm">
+        <i class="bi bi-printer me-1"></i> Print Invoice
+      </button>
+    </div>
+  </div>
+
+  <app-loading-spinner *ngIf="loading" message="Loading reservation details..."></app-loading-spinner>
+  <app-error-state *ngIf="errorMessage" [message]="errorMessage" (onRetry)="loadDetails()"></app-error-state>
+
+  <!-- Printable Invoice Document Card -->
+  <div *ngIf="reservation" class="card shadow-sm border p-4 p-md-5 print-area">
+    <!-- Invoice Header -->
+    <div class="row align-items-center pb-4 mb-4 border-bottom">
+      <div class="col-sm-6">
+        <div class="d-flex align-items-center mb-2">
+          <i class="bi bi-buildings-fill text-primary fs-3 me-2"></i>
+          <span class="fs-4 font-serif fw-bold text-dark">StayEase</span>
+        </div>
+        <p class="text-muted small mb-0">Premier Multi-Hotel Hospitality Network</p>
+        <p class="text-muted small mb-0">GSTIN: 27AABCS1429B1Z8</p>
+      </div>
+      <div class="col-sm-6 text-sm-end mt-3 mt-sm-0">
+        <h4 class="font-serif text-dark mb-1">TAX INVOICE</h4>
+        <div class="small text-muted">Invoice No: <strong class="text-dark">{{ invoice?.invoiceNumber || 'INV-' + reservation.id }}</strong></div>
+        <div class="small text-muted">Date: <strong class="text-dark">{{ (invoice?.invoiceDate || reservation.createdAt) | date:'mediumDate' }}</strong></div>
+        <div class="small text-muted">Ref: <strong class="text-primary">{{ reservation.referenceNumber }}</strong></div>
+      </div>
+    </div>
+
+    <!-- Hotel & Guest Billed-To Info -->
+    <div class="row g-4 mb-4 pb-4 border-bottom small">
+      <div class="col-sm-6">
+        <h6 class="fw-bold text-dark text-uppercase small">Property Details</h6>
+        <div class="fw-bold text-dark fs-6">{{ invoice?.hotel?.name || reservation.hotelName || 'StayEase Hotel' }}</div>
+        <div class="text-muted">{{ invoice?.hotel?.address }}</div>
+        <div class="text-muted"><i class="bi bi-telephone me-1"></i> {{ invoice?.hotel?.contactPhone }}</div>
+      </div>
+      <div class="col-sm-6 text-sm-end">
+        <h6 class="fw-bold text-dark text-uppercase small">Billed To (Guest)</h6>
+        <div class="fw-bold text-dark fs-6">{{ invoice?.guest?.fullName || reservation.guestName }}</div>
+        <div class="text-muted">{{ invoice?.guest?.email || reservation.guestEmail }}</div>
+        <div class="text-muted"><i class="bi bi-phone me-1"></i> {{ invoice?.guest?.phone || reservation.guestPhone }}</div>
+      </div>
+    </div>
+
+    <!-- Stay Summary Table -->
+    <div class="table-responsive mb-4">
+      <table class="table table-bordered align-middle small">
+        <thead class="table-light">
+          <tr>
+            <th>Description</th>
+            <th class="text-center">Dates</th>
+            <th class="text-center">Nights</th>
+            <th class="text-center">Room Assignment</th>
+            <th class="text-end">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <div class="fw-bold text-dark">{{ invoice?.stay?.roomTypeName || reservation.roomTypeName || 'Room Type ' + reservation.roomTypeId }}</div>
+              <div class="text-muted small">{{ reservation.guestCount }} Guests • Status: {{ reservation.status }}</div>
+            </td>
+            <td class="text-center">{{ reservation.checkInDate }} to {{ reservation.checkOutDate }}</td>
+            <td class="text-center">{{ reservation.nights }}</td>
+            <td class="text-center">
+              <span *ngIf="reservation.assignedRoomNumber" class="badge bg-success">Room {{ reservation.assignedRoomNumber }}</span>
+              <span *ngIf="!reservation.assignedRoomNumber" class="text-muted">Assigned at check-in</span>
+            </td>
+            <td class="text-end fw-bold">₹{{ reservation.lodgingSubtotal | number:'1.2-2' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Charges Breakdown Table -->
+    <div class="row justify-content-end mb-4">
+      <div class="col-md-5">
+        <div class="d-flex justify-content-between small text-muted mb-2">
+          <span>Lodging Subtotal:</span>
+          <span class="text-dark fw-semibold">₹{{ reservation.lodgingSubtotal | number:'1.2-2' }}</span>
+        </div>
+        <div class="d-flex justify-content-between small text-muted mb-2">
+          <span>GST Tax (12%):</span>
+          <span class="text-dark fw-semibold">₹{{ reservation.taxAmount | number:'1.2-2' }}</span>
+        </div>
+        <hr class="my-2">
+        <div class="d-flex justify-content-between small mb-2">
+          <span class="fw-bold text-dark">Total Booking Amount:</span>
+          <span class="fw-bold text-dark fs-6">₹{{ reservation.totalAmount | number:'1.2-2' }}</span>
+        </div>
+        <div class="d-flex justify-content-between small text-success mb-2">
+          <span>Amount Paid:</span>
+          <span class="fw-bold">₹{{ reservation.amountPaid | number:'1.2-2' }}</span>
+        </div>
+        <div class="d-flex justify-content-between small text-danger" *ngIf="reservation.balanceDue > 0">
+          <span>Balance Due:</span>
+          <span class="fw-bold">₹{{ reservation.balanceDue | number:'1.2-2' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payment & Terms Footer -->
+    <div class="p-3 bg-light rounded-3 small text-muted border">
+      <div class="row g-2">
+        <div class="col-sm-6">
+          <span class="fw-bold text-dark d-block">Payment Method:</span>
+          <span>{{ reservation.paymentPolicy }} ({{ reservation.paymentStatus }})</span>
+        </div>
+        <div class="col-sm-6 text-sm-end">
+          <span class="fw-bold text-dark d-block">Cancellation Policy:</span>
+          <span>100% refund ≥ 24h before 14:00 check-in. Late cancellation: 1 night + tax.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODAL: AMENDMENT DIALOG
+     ══════════════════════════════════════════════════════════════ -->
+<div *ngIf="showAmendModal" class="modal d-block bg-dark bg-opacity-50" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content shadow-lg border-0 rounded-3">
+      <div class="modal-header border-bottom">
+        <h5 class="modal-title font-serif fw-bold text-dark">
+          <i class="bi bi-pencil-square text-primary me-2"></i> Amend Reservation Dates
+        </h5>
+        <button type="button" class="btn-close" (click)="showAmendModal = false"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div *ngIf="amendError" class="alert alert-danger small d-flex align-items-center mb-3">
+          <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+          <span>{{ amendError }}</span>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-bold text-muted">New Check-in Date</label>
+          <input type="date" [(ngModel)]="newCheckInDate" class="form-control form-control-sm">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-bold text-muted">New Check-out Date</label>
+          <input type="date" [(ngModel)]="newCheckOutDate" class="form-control form-control-sm">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-bold text-muted">Guest Count</label>
+          <select [(ngModel)]="newGuestCount" class="form-select form-select-sm">
+            <option [ngValue]="1">1 Guest</option>
+            <option [ngValue]="2">2 Guests</option>
+            <option [ngValue]="3">3 Guests</option>
+            <option [ngValue]="4">4 Guests</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer border-top">
+        <button type="button" class="btn btn-secondary btn-sm" (click)="showAmendModal = false">Cancel</button>
+        <button type="button" [disabled]="amending" (click)="submitAmendment()" class="btn btn-primary btn-sm px-3">
+          <span *ngIf="amending" class="spinner-border spinner-border-sm me-1"></span>
+          Recalculate & Amend
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

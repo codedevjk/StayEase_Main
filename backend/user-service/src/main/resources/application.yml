@@ -1,0 +1,83 @@
+spring:
+  application:
+    name: stayease-user-service
+
+  messages:
+    basename: messages,message
+    encoding: UTF-8
+
+  # ── Database (MySQL on localhost) ──────────────────────────────────────────
+  datasource:
+    url: ${STAYEASE_USER_DB_URL:jdbc:mysql://localhost:3306/stayease_user_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
+    username: ${STAYEASE_USER_DB_USER:root}
+    password: ${STAYEASE_USER_DB_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      pool-name: UserServicePool
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 20000
+
+  # ── JPA / Hibernate ───────────────────────────────────────────────────────
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+
+  # ── Consul discovery (manual local runner on port 8500) ───────────────────
+  cloud:
+    consul:
+      host: ${CONSUL_HOST:localhost}
+      port: ${CONSUL_PORT:8500}
+      discovery:
+        service-name: stayease-user-service
+        register: true
+        prefer-ip-address: true
+        health-check-path: /actuator/health
+        health-check-interval: 10s
+        instance-id: ${spring.application.name}:${server.port}
+
+# ── Server ────────────────────────────────────────────────────────────────────
+server:
+  port: 8081
+  error:
+    include-message: always
+    include-binding-errors: always
+
+# ── Actuator ──────────────────────────────────────────────────────────────────
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics
+  endpoint:
+    health:
+      show-details: always
+
+# ── JWT & Application Settings ────────────────────────────────────────────────
+stayease:
+  jwt:
+    # 256-bit default signing secret for local execution; override via JWT_SECRET env var
+    secret: ${JWT_SECRET:c3RheWVhc2Utc3VwZXItc2VjcmV0LWp3dC1rZXktZm9yLXRlc3RpbmctcHVycG9zZXMtb25seQ==}
+    expiration-seconds: 900          # 15 minutes
+    issuer: stayease
+  admin-bootstrap:
+    enabled: ${STAYEASE_BOOTSTRAP_ADMIN_ENABLED:false}
+    admin-email: ${STAYEASE_BOOTSTRAP_ADMIN_EMAIL:admin@stayease.local}
+    admin-full-name: ${STAYEASE_BOOTSTRAP_ADMIN_NAME:StayEase Administrator}
+    admin-password: ${STAYEASE_BOOTSTRAP_ADMIN_PASSWORD:}
+  time-zone: Asia/Kolkata
+
+# ── Logging ───────────────────────────────────────────────────────────────────
+logging:
+  config: classpath:log4j2.properties
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [correlationId=%X{correlationId}] %-5level %logger{36} - %msg%n"
+  level:
+    com.stayease: DEBUG
+    org.springframework.security: INFO

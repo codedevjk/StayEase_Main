@@ -1,0 +1,140 @@
+<div class="card shadow-sm border p-4 mb-4">
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+    <div>
+      <h3 class="font-serif fw-bold text-dark mb-1">Rooms & Housekeeping Operations</h3>
+      <p class="text-muted small mb-0">Manage physical room readiness, cleaning workflows, and room types</p>
+    </div>
+    
+    <div class="d-flex align-items-center gap-2">
+      <!-- Hotel Selector Dropdown -->
+      <select [(ngModel)]="selectedHotelId" (change)="loadRooms()" class="form-select form-select-sm" style="min-width: 220px;">
+        <option *ngFor="let h of hotels" [ngValue]="h.id">{{ h.name }}{{ h.destination ? ' (' + h.destination + ')' : '' }}</option>
+      </select>
+      
+      <button (click)="showRoomTypeModal = true" class="btn btn-outline-primary btn-sm text-nowrap">
+        <i class="bi bi-plus-lg me-1"></i> Add Room Type
+      </button>
+    </div>
+  </div>
+</div>
+
+<div *ngIf="successMessage" class="alert alert-success d-flex align-items-center small mb-3 alert-dismissible fade show">
+  <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+  <span>{{ successMessage }}</span>
+  <button type="button" class="btn-close" (click)="successMessage = null"></button>
+</div>
+<div *ngIf="errorMessage" class="alert alert-danger d-flex align-items-center small mb-3 alert-dismissible fade show">
+  <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+  <span>{{ errorMessage }}</span>
+  <button type="button" class="btn-close" (click)="errorMessage = null"></button>
+</div>
+
+<app-loading-spinner *ngIf="loading" message="Loading physical room states..."></app-loading-spinner>
+
+<div *ngIf="!loading && rooms.length === 0" class="card shadow-sm border p-5 text-center">
+  <app-empty-state
+    icon="bi bi-door-closed"
+    title="No Physical Rooms Found"
+    message="No physical rooms registered for the selected hotel property.">
+  </app-empty-state>
+</div>
+
+<!-- Rooms Table -->
+<div *ngIf="!loading && rooms.length > 0" class="card shadow-sm border overflow-hidden">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0 small">
+      <thead class="table-light">
+        <tr>
+          <th>Room Number</th>
+          <th>Room Type ID</th>
+          <th>Operational Status</th>
+          <th>Housekeeping Readiness</th>
+          <th class="text-end">Update Housekeeping</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let room of rooms">
+          <td class="fw-bold text-dark fs-6">{{ room.roomNumber }}</td>
+          <td>Type #{{ room.roomTypeId }}</td>
+          <td>
+            <div class="btn-group btn-group-sm" role="group">
+              <button (click)="changeOperational(room, 'OPERATIONAL')" class="btn btn-sm" [class.btn-success]="room.operationalStatus === 'OPERATIONAL'" [class.btn-outline-secondary]="room.operationalStatus !== 'OPERATIONAL'">
+                OPERATIONAL
+              </button>
+              <button (click)="changeOperational(room, 'OUT_OF_SERVICE')" class="btn btn-sm" [class.btn-danger]="room.operationalStatus === 'OUT_OF_SERVICE'" [class.btn-outline-secondary]="room.operationalStatus !== 'OUT_OF_SERVICE'">
+                OUT_OF_SERVICE
+              </button>
+            </div>
+          </td>
+          <td>
+            <span class="badge px-3 py-2"
+              [class.bg-success]="room.housekeepingStatus === 'CLEAN'"
+              [class.bg-warning]="room.housekeepingStatus === 'DIRTY'"
+              [class.text-dark]="room.housekeepingStatus === 'DIRTY'"
+              [class.bg-info]="room.housekeepingStatus === 'INSPECTING' || room.housekeepingStatus === 'INSPECTED'">
+              {{ room.housekeepingStatus }}
+            </span>
+          </td>
+          <td class="text-end">
+            <div class="btn-group btn-group-sm" role="group">
+              <button (click)="changeHousekeeping(room, 'CLEAN')" class="btn btn-outline-success" [disabled]="room.housekeepingStatus === 'CLEAN'" title="Mark Clean & Ready">
+                <i class="bi bi-sparkles me-1"></i> Clean
+              </button>
+              <button (click)="changeHousekeeping(room, 'INSPECTING')" class="btn btn-outline-info" [disabled]="room.housekeepingStatus === 'INSPECTING'" title="Mark Inspecting">
+                <i class="bi bi-clipboard-check me-1"></i> Inspecting
+              </button>
+              <button (click)="changeHousekeeping(room, 'DIRTY')" class="btn btn-outline-warning text-dark" [disabled]="room.housekeepingStatus === 'DIRTY'" title="Mark Dirty">
+                <i class="bi bi-brush me-1"></i> Dirty
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODAL: CREATE ROOM TYPE
+     ══════════════════════════════════════════════════════════════ -->
+<div *ngIf="showRoomTypeModal" class="modal d-block bg-dark bg-opacity-50" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content shadow-lg border-0 rounded-3">
+      <div class="modal-header border-bottom">
+        <h5 class="modal-title font-serif fw-bold text-dark">
+          <i class="bi bi-plus-square text-primary me-2"></i> Add Room Type
+        </h5>
+        <button type="button" class="btn-close" (click)="showRoomTypeModal = false"></button>
+      </div>
+      <form [formGroup]="roomTypeForm" (ngSubmit)="onSaveRoomType()">
+        <div class="modal-body p-4">
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-muted">Room Type Name</label>
+            <input type="text" formControlName="name" class="form-control form-control-sm" placeholder="e.g. Deluxe Ocean View Suite">
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-muted">Description</label>
+            <textarea formControlName="description" class="form-control form-control-sm" rows="3" placeholder="Room layout, bedding configuration, view..."></textarea>
+          </div>
+          <div class="row g-2">
+            <div class="col-6">
+              <label class="form-label small fw-bold text-muted">Max Capacity (Guests)</label>
+              <input type="number" formControlName="maxGuests" class="form-control form-control-sm">
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-bold text-muted">Base Nightly Rate (₹)</label>
+              <input type="number" formControlName="baseNightlyRate" class="form-control form-control-sm">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-top">
+          <button type="button" class="btn btn-secondary btn-sm" (click)="showRoomTypeModal = false">Cancel</button>
+          <button type="submit" [disabled]="savingRoomType || roomTypeForm.invalid" class="btn btn-primary btn-sm px-3">
+            <span *ngIf="savingRoomType" class="spinner-border spinner-border-sm me-1"></span>
+            Create Room Type
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

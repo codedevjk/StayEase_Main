@@ -1,0 +1,505 @@
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-10">
+
+      <!-- Step Indicator Header -->
+      <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-3 border-bottom gap-3">
+        <div>
+          <h2 class="font-serif fw-bold text-dark mb-1">Hotel Reservation</h2>
+          <p class="text-muted small mb-0">Confirm your stay details and complete your reservation</p>
+        </div>
+        <div class="d-flex align-items-center gap-2 small">
+          <span class="badge px-3 py-2" [class.bg-primary]="step === 1" [class.bg-secondary]="step !== 1">
+            <i class="bi bi-card-checklist me-1"></i> 1. Review & Policy
+          </span>
+          <i class="bi bi-chevron-right text-muted small"></i>
+          <span class="badge px-3 py-2" [class.bg-primary]="step === 2" [class.bg-secondary]="step !== 2">
+            <i class="bi bi-credit-card me-1"></i> 2. Payment
+          </span>
+          <i class="bi bi-chevron-right text-muted small"></i>
+          <span class="badge px-3 py-2" [class.bg-success]="step === 3" [class.bg-secondary]="step !== 3">
+            <i class="bi bi-check-circle-fill me-1"></i> 3. Confirmation
+          </span>
+        </div>
+      </div>
+
+      <app-loading-spinner *ngIf="loading" message="Preparing reservation details..."></app-loading-spinner>
+      <app-error-state *ngIf="errorMessage" [message]="errorMessage" (onRetry)="loadBookingContext()"></app-error-state>
+
+      <!-- ══════════════════════════════════════════════════════════════
+           STEP 1: REVIEW STAY & SELECT PAYMENT POLICY
+           ══════════════════════════════════════════════════════════════ -->
+      <div *ngIf="!loading && step === 1 && hotel && selectedRoomType">
+        <div class="row g-4">
+          <!-- Left: Selection & Payment Policy Choice -->
+          <div class="col-lg-7">
+            <!-- Stay Details Card -->
+            <div class="card shadow-sm p-4 mb-4 border">
+              <h5 class="fw-bold text-dark mb-3"><i class="bi bi-building text-primary me-2"></i> Stay Overview</h5>
+              <div class="row g-3 small">
+                <div class="col-sm-6">
+                  <span class="text-muted d-block mb-1"><i class="bi bi-buildings text-primary me-1"></i> Property</span>
+                  <span class="fw-bold text-dark fs-6">{{ hotel.name }}</span>
+                </div>
+                <div class="col-sm-6">
+                  <span class="text-muted d-block mb-1"><i class="bi bi-geo-alt-fill text-danger me-1"></i> Location</span>
+                  <span class="fw-bold text-dark fs-6">{{ hotelLocation }}</span>
+                </div>
+                <div class="col-sm-6">
+                  <span class="text-muted d-block mb-1"><i class="bi bi-calendar-check text-success me-1"></i> Check-in</span>
+                  <span class="fw-semibold text-dark">{{ checkInDate | date:'mediumDate' }} (from 14:00)</span>
+                </div>
+                <div class="col-sm-6">
+                  <span class="text-muted d-block mb-1"><i class="bi bi-calendar-x text-secondary me-1"></i> Check-out</span>
+                  <span class="fw-semibold text-dark">{{ checkOutDate | date:'mediumDate' }} (until 11:00)</span>
+                </div>
+                <div class="col-sm-6">
+                  <span class="text-muted d-block mb-1"><i class="bi bi-door-open-fill text-primary me-1"></i> Selected Room</span>
+                  <span class="fw-bold text-primary">{{ selectedRoomType.name }}</span>
+                </div>
+                <div class="col-sm-6">
+                  <span class="text-muted d-block mb-1"><i class="bi bi-people-fill text-info me-1"></i> Stay Details</span>
+                  <span class="fw-semibold text-dark">{{ adults }} Adult{{ adults > 1 ? 's' : '' }}<span *ngIf="children > 0">, {{ children }} Child{{ children > 1 ? 'ren' : '' }} (≤10 yrs)</span> · {{ stayNights }} Night{{ stayNights > 1 ? 's' : '' }}</span>
+                  <div class="mt-1" *ngIf="requiredRooms > 1">
+                    <span class="badge bg-warning text-dark"><i class="bi bi-info-circle me-1"></i> Requires {{ requiredRooms }} Rooms (Max 2 adults/room)</span>
+                  </div>
+                  <div class="mt-1" *ngIf="children > 0">
+                    <span class="badge bg-light text-secondary border"><i class="bi bi-check2-circle text-success me-1"></i> Children stay with adults (No extra room)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Payment Policy Options -->
+            <div class="card shadow-sm p-4 mb-4 border">
+              <h5 class="fw-bold text-dark mb-3"><i class="bi bi-wallet2 text-primary me-2"></i> Choose Payment Policy</h5>
+
+              <!-- PREPAID Option -->
+              <div class="card p-3 mb-3 border cursor-pointer" [class.border-primary]="selectedPolicy === 'PREPAID'" [class.bg-light]="selectedPolicy === 'PREPAID'" (click)="selectedPolicy = 'PREPAID'">
+                <div class="d-flex align-items-start gap-3">
+                  <input class="form-check-input mt-1" type="radio" name="paymentPolicy" id="policyPrepaid" value="PREPAID" [(ngModel)]="selectedPolicy">
+                  <div class="flex-grow-1">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                      <label class="fw-bold text-dark mb-0 cursor-pointer" for="policyPrepaid">
+                        <i class="bi bi-lightning-charge-fill text-warning me-1"></i> Pay Online (Instant Hold)
+                      </label>
+                      <span class="badge bg-success small"><i class="bi bi-shield-check me-1"></i> Recommended</span>
+                    </div>
+                    <p class="text-muted small mb-0">
+                      Instant booking confirmation with secured room assignment and full refund up to 24 hrs prior to check-in.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- PAY_LATER Option -->
+              <div class="card p-3 border cursor-pointer" [class.border-primary]="selectedPolicy === 'PAY_LATER'" [class.bg-light]="selectedPolicy === 'PAY_LATER'" (click)="selectedPolicy = 'PAY_LATER'">
+                <div class="d-flex align-items-start gap-3">
+                  <input class="form-check-input mt-1" type="radio" name="paymentPolicy" id="policyPayLater" value="PAY_LATER" [(ngModel)]="selectedPolicy">
+                  <div class="flex-grow-1">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                      <label class="fw-bold text-dark mb-0 cursor-pointer" for="policyPayLater">
+                        <i class="bi bi-cash-stack text-success me-1"></i> Pay at Hotel (Flexible)
+                      </label>
+                      <span class="badge bg-secondary small">Zero Advance</span>
+                    </div>
+                    <p class="text-muted small mb-0">
+                      Reserve now with zero payment today. Pay comfortably upon arrival during check-in.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Guest Cancellation Notice -->
+            <div class="alert alert-light border small d-flex align-items-center text-muted py-2 px-3">
+              <i class="bi bi-shield-check text-success me-2 fs-5"></i>
+              <span>Free cancellation up to 24 hours prior to check-in at 14:00. Guaranteed full refund.</span>
+            </div>
+          </div>
+
+          <!-- Right: Price Breakdown Card -->
+          <div class="col-lg-5">
+            <div class="card shadow-sm p-4 sticky-top border" style="top: 85px;">
+              <h5 class="font-serif fw-bold text-dark mb-3"><i class="bi bi-receipt-cutoff text-primary me-2"></i> Price Summary</h5>
+              
+              <div class="d-flex justify-content-between small text-muted mb-2">
+                <span><i class="bi bi-moon-stars me-1 text-muted"></i> Lodging Subtotal ({{ stayNights }} night{{ stayNights > 1 ? 's' : '' }})</span>
+                <span class="text-dark fw-semibold">₹{{ lodgingSubtotal | number:'1.2-2' }}</span>
+              </div>
+              <div class="d-flex justify-content-between small text-muted mb-3">
+                <span><i class="bi bi-percent me-1 text-muted"></i> Goods & Services Tax (GST 12%)</span>
+                <span class="text-dark fw-semibold">₹{{ taxAmount | number:'1.2-2' }}</span>
+              </div>
+
+              <hr class="my-2 text-muted">
+
+              <div class="d-flex justify-content-between align-items-center my-3">
+                <span class="h6 fw-bold text-dark mb-0"><i class="bi bi-currency-rupee me-1 text-primary"></i> Total Amount Due</span>
+                <span class="h4 fw-bold text-primary mb-0">₹{{ totalBookingAmount | number:'1.2-2' }}</span>
+              </div>
+
+              <button (click)="onCreateBooking()" [disabled]="submittingBooking || adults < 1" class="btn btn-primary w-100 py-3 shadow-sm fw-bold mt-2">
+                <span *ngIf="submittingBooking" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                <span *ngIf="!submittingBooking && selectedPolicy === 'PREPAID'">Proceed to Payment <i class="bi bi-arrow-right ms-1"></i></span>
+                <span *ngIf="!submittingBooking && selectedPolicy === 'PAY_LATER'">Confirm Reservation <i class="bi bi-check-circle ms-1"></i></span>
+              </button>
+
+              <span *ngIf="adults < 1" class="text-danger small mt-2 d-block fw-bold text-center">
+                <i class="bi bi-exclamation-triangle-fill me-1"></i> At least 1 adult is required to make a booking. Child-only bookings are not allowed.
+              </span>
+
+              <div class="text-center mt-3 text-muted" style="font-size: 0.78rem;">
+                <i class="bi bi-lock-fill text-success me-1"></i> 256-bit Secure Encryption · Best Rate Guaranteed
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════════════
+           STEP 2: PAYMENT (PREPAID ONLY)
+           ══════════════════════════════════════════════════════════════ -->
+      <div *ngIf="step === 2 && createdReservation" class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+          <div class="card shadow-sm p-4 p-md-5 border">
+            
+            <!-- Room Hold Timer Alert -->
+            <div class="alert alert-warning d-flex justify-content-between align-items-center mb-4 p-3 rounded-3">
+              <div class="d-flex align-items-center">
+                <i class="bi bi-clock-history text-warning fs-5 me-2"></i>
+                <span class="small fw-semibold text-dark">Room Held For You:</span>
+              </div>
+              <span class="badge bg-danger font-monospace fs-6 px-3 py-2 fw-bold">
+                {{ formattedHoldTime }}
+              </span>
+            </div>
+
+            <!-- Payment Header -->
+            <div class="text-center mb-4">
+              <h4 class="font-serif fw-bold text-dark mb-1">Complete Payment</h4>
+              <p class="text-muted small mb-2">Booking Reference: <strong class="text-dark">{{ createdReservation.referenceNumber }}</strong></p>
+              <div class="h2 fw-bold text-primary">₹{{ createdReservation.totalAmount | number:'1.2-2' }}</div>
+            </div>
+
+            <!-- Error Banner -->
+            <div *ngIf="paymentError" class="alert alert-danger small d-flex align-items-center mb-3">
+              <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+              <span>{{ paymentError }}</span>
+            </div>
+
+            <!-- Payment Method Radio Cards -->
+            <div class="mb-4">
+              <label class="form-label small fw-bold text-muted mb-2">Select Payment Method</label>
+              
+              <!-- UPI -->
+              <div class="card p-3 mb-2 border cursor-pointer" [class.border-primary]="selectedPaymentMethod === 'UPI'" [class.bg-light]="selectedPaymentMethod === 'UPI'" (click)="selectedPaymentMethod = 'UPI'">
+                <div class="d-flex align-items-center justify-content-between">
+                  <div class="d-flex align-items-center">
+                    <input class="form-check-input me-3 mt-0" type="radio" name="payMethod" id="payUpi" value="UPI" [(ngModel)]="selectedPaymentMethod">
+                    <label class="fw-semibold text-dark mb-0 cursor-pointer" for="payUpi">
+                      <i class="bi bi-qr-code text-primary me-2"></i> UPI / VPA
+                    </label>
+                  </div>
+                  <span class="text-muted small">Google Pay, PhonePe, Paytm</span>
+                </div>
+              </div>
+
+              <!-- UPI ID Input Field (Shown when UPI is selected) -->
+              <div *ngIf="selectedPaymentMethod === 'UPI'" class="card p-3 mb-3 border border-primary bg-light shadow-sm">
+                <label class="form-label small fw-bold text-dark mb-1">
+                  <i class="bi bi-at text-primary me-1"></i> Enter UPI ID / Virtual Payment Address <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                  <span class="input-group-text bg-white"><i class="bi bi-qr-code-scan text-muted"></i></span>
+                  <input type="text"
+                         [(ngModel)]="upiId"
+                         (input)="validateUpiId()"
+                         (blur)="upiIdTouched = true; validateUpiId()"
+                         class="form-control"
+                         [class.is-invalid]="upiIdTouched && upiIdError"
+                         [class.is-valid]="upiIdTouched && !upiIdError && upiId.length > 0"
+                         placeholder="e.g. 9876543210@paytm, user@okhdfcbank">
+                </div>
+                <span *ngIf="upiIdTouched && upiIdError" class="text-danger small mt-1 d-block">
+                  <i class="bi bi-exclamation-circle me-1"></i> {{ upiIdError }}
+                </span>
+                <span *ngIf="!upiIdError" class="text-muted small mt-1 d-block" style="font-size: 0.78rem;">
+                  <i class="bi bi-shield-check text-success me-1"></i> A payment request will be sent to your UPI handle upon clicking Pay.
+                </span>
+              </div>
+
+              <!-- Credit / Debit Card -->
+              <div class="card p-3 mb-2 border cursor-pointer" [class.border-primary]="selectedPaymentMethod === 'CARD'" [class.bg-light]="selectedPaymentMethod === 'CARD'" (click)="selectedPaymentMethod = 'CARD'">
+                <div class="d-flex align-items-center justify-content-between">
+                  <div class="d-flex align-items-center">
+                    <input class="form-check-input me-3 mt-0" type="radio" name="payMethod" id="payCard" value="CARD" [(ngModel)]="selectedPaymentMethod">
+                    <label class="fw-semibold text-dark mb-0 cursor-pointer" for="payCard">
+                      <i class="bi bi-credit-card-2-front text-primary me-2"></i> Credit / Debit Card
+                    </label>
+                  </div>
+                  <span class="text-muted small">Visa, Mastercard, RuPay, Amex</span>
+                </div>
+              </div>
+
+              <!-- Card Details Form (Shown when CARD is selected) -->
+              <div *ngIf="selectedPaymentMethod === 'CARD'" class="card p-3 mb-3 border border-primary bg-light shadow-sm">
+                <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                  <span class="small fw-bold text-dark">
+                    <i class="bi bi-shield-lock-fill text-primary me-1"></i> Enter Card Information
+                  </span>
+                  <div class="d-flex align-items-center gap-1">
+                    <span class="badge" [class.bg-primary]="cardBrand === 'visa'" [class.bg-white]="cardBrand !== 'visa'" [class.text-muted]="cardBrand !== 'visa'" [class.border]="cardBrand !== 'visa'">Visa</span>
+                    <span class="badge" [class.bg-warning]="cardBrand === 'mastercard'" [class.text-dark]="cardBrand === 'mastercard'" [class.bg-white]="cardBrand !== 'mastercard'" [class.text-muted]="cardBrand !== 'mastercard'" [class.border]="cardBrand !== 'mastercard'">Mastercard</span>
+                    <span class="badge" [class.bg-success]="cardBrand === 'rupay'" [class.bg-white]="cardBrand !== 'rupay'" [class.text-muted]="cardBrand !== 'rupay'" [class.border]="cardBrand !== 'rupay'">RuPay</span>
+                    <span class="badge" [class.bg-info]="cardBrand === 'amex'" [class.text-dark]="cardBrand === 'amex'" [class.bg-white]="cardBrand !== 'amex'" [class.text-muted]="cardBrand !== 'amex'" [class.border]="cardBrand !== 'amex'">Amex</span>
+                  </div>
+                </div>
+
+                <!-- Cardholder Name -->
+                <div class="mb-3">
+                  <label class="form-label small fw-bold text-dark mb-1">
+                    Cardholder Name <span class="text-danger">*</span>
+                  </label>
+                  <div class="input-group">
+                    <span class="input-group-text bg-white"><i class="bi bi-person text-muted"></i></span>
+                    <input type="text"
+                           [(ngModel)]="cardHolderName"
+                           (input)="validateCardHolderName()"
+                           (blur)="cardTouched.name = true; validateCardHolderName()"
+                           class="form-control"
+                           [class.is-invalid]="cardTouched.name && cardErrors.name"
+                           [class.is-valid]="cardTouched.name && !cardErrors.name && cardHolderName.trim().length >= 3"
+                           placeholder="Full name as printed on card">
+                  </div>
+                  <span *ngIf="cardTouched.name && cardErrors.name" class="text-danger small mt-1 d-block">
+                    <i class="bi bi-exclamation-circle me-1"></i> {{ cardErrors.name }}
+                  </span>
+                </div>
+
+                <!-- Card Number -->
+                <div class="mb-3">
+                  <label class="form-label small fw-bold text-dark mb-1">
+                    Card Number <span class="text-danger">*</span>
+                  </label>
+                  <div class="input-group">
+                    <span class="input-group-text bg-white">
+                      <i class="bi bi-credit-card text-muted" *ngIf="cardBrand === 'generic'"></i>
+                      <i class="bi bi-credit-card-2-front text-primary" *ngIf="cardBrand !== 'generic'"></i>
+                    </span>
+                    <input type="text"
+                           [(ngModel)]="cardNumber"
+                           (input)="formatCardNumber()"
+                           (blur)="cardTouched.number = true; validateCardNumber()"
+                           class="form-control font-monospace"
+                           [class.is-invalid]="cardTouched.number && cardErrors.number"
+                           [class.is-valid]="cardTouched.number && !cardErrors.number && cardNumber.length >= 17"
+                           maxlength="19"
+                           placeholder="4111 2222 3333 4444">
+                  </div>
+                  <span *ngIf="cardTouched.number && cardErrors.number" class="text-danger small mt-1 d-block">
+                    <i class="bi bi-exclamation-circle me-1"></i> {{ cardErrors.number }}
+                  </span>
+                </div>
+
+                <!-- Expiry Date & CVV -->
+                <div class="row g-2 mb-2">
+                  <div class="col-6">
+                    <label class="form-label small fw-bold text-dark mb-1">
+                      Expiry Date <span class="text-danger">*</span>
+                    </label>
+                    <div class="input-group">
+                      <span class="input-group-text bg-white"><i class="bi bi-calendar-event text-muted"></i></span>
+                      <input type="text"
+                             [(ngModel)]="cardExpiry"
+                             (input)="formatCardExpiry()"
+                             (blur)="cardTouched.expiry = true; validateCardExpiry()"
+                             class="form-control text-center font-monospace"
+                             [class.is-invalid]="cardTouched.expiry && cardErrors.expiry"
+                             [class.is-valid]="cardTouched.expiry && !cardErrors.expiry && cardExpiry.length === 5"
+                             maxlength="5"
+                             placeholder="MM/YY">
+                    </div>
+                    <span *ngIf="cardTouched.expiry && cardErrors.expiry" class="text-danger small mt-1 d-block">
+                      <i class="bi bi-exclamation-circle me-1"></i> {{ cardErrors.expiry }}
+                    </span>
+                  </div>
+
+                  <div class="col-6">
+                    <label class="form-label small fw-bold text-dark mb-1">
+                      CVV / CVC <span class="text-danger">*</span>
+                    </label>
+                    <div class="input-group">
+                      <span class="input-group-text bg-white"><i class="bi bi-shield-lock text-muted"></i></span>
+                      <input type="password"
+                             [(ngModel)]="cardCvv"
+                             (input)="validateCardCvv()"
+                             (blur)="cardTouched.cvv = true; validateCardCvv()"
+                             class="form-control text-center font-monospace"
+                             [class.is-invalid]="cardTouched.cvv && cardErrors.cvv"
+                             [class.is-valid]="cardTouched.cvv && !cardErrors.cvv && cardCvv.length >= 3"
+                             [maxlength]="cardBrand === 'amex' ? 4 : 3"
+                             placeholder="•••">
+                    </div>
+                    <span *ngIf="cardTouched.cvv && cardErrors.cvv" class="text-danger small mt-1 d-block">
+                      <i class="bi bi-exclamation-circle me-1"></i> {{ cardErrors.cvv }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="mt-2 text-muted" style="font-size: 0.76rem;">
+                  <i class="bi bi-shield-check text-success me-1"></i> 256-bit encrypted. Card details are processed in compliance with PCI-DSS guidelines.
+                </div>
+              </div>
+
+              <!-- Net Banking -->
+              <div class="card p-3 mb-2 border cursor-pointer" [class.border-primary]="selectedPaymentMethod === 'NETBANKING'" [class.bg-light]="selectedPaymentMethod === 'NETBANKING'" (click)="selectedPaymentMethod = 'NETBANKING'">
+                <div class="d-flex align-items-center justify-content-between">
+                  <div class="d-flex align-items-center">
+                    <input class="form-check-input me-3 mt-0" type="radio" name="payMethod" id="payNet" value="NETBANKING" [(ngModel)]="selectedPaymentMethod">
+                    <label class="fw-semibold text-dark mb-0 cursor-pointer" for="payNet">
+                      <i class="bi bi-bank text-primary me-2"></i> Net Banking
+                    </label>
+                  </div>
+                  <span class="text-muted small">All Major Indian Banks</span>
+                </div>
+              </div>
+
+              <!-- Net Banking Selection (Shown when NETBANKING is selected) -->
+              <div *ngIf="selectedPaymentMethod === 'NETBANKING'" class="card p-3 mb-3 border border-primary bg-light shadow-sm">
+                <label class="form-label small fw-bold text-dark mb-2">
+                  <i class="bi bi-bank text-primary me-1"></i> Popular Banks <span class="text-danger">*</span>
+                </label>
+
+                <!-- Popular Bank Grid Buttons -->
+                <div class="row g-2 mb-3">
+                  <div *ngFor="let b of popularBanks" class="col-4">
+                    <button type="button"
+                            (click)="selectBank(b.name)"
+                            class="btn btn-sm w-100 p-2 text-center border bg-white d-flex flex-column align-items-center justify-content-center"
+                            [class.border-primary]="selectedBank === b.name"
+                            [class.bg-primary]="selectedBank === b.name"
+                            [class.bg-opacity-10]="selectedBank === b.name"
+                            [class.shadow-sm]="selectedBank === b.name"
+                            style="min-height: 58px;">
+                      <i class="bi fs-5" [class]="b.icon" [class.text-primary]="selectedBank === b.name" [class.text-secondary]="selectedBank !== b.name"></i>
+                      <span class="small fw-semibold mt-1 text-truncate w-100" [class.text-primary]="selectedBank === b.name" [class.text-dark]="selectedBank !== b.name" style="font-size: 0.74rem;">
+                        {{ b.code }}
+                      </span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Comprehensive All Banks Dropdown -->
+                <label class="form-label small fw-semibold text-muted mb-1">
+                  Or select from list of all Indian banks:
+                </label>
+                <div class="input-group">
+                  <span class="input-group-text bg-white"><i class="bi bi-building text-muted"></i></span>
+                  <select [(ngModel)]="selectedBank"
+                          (change)="bankTouched = true; validateBank()"
+                          class="form-select"
+                          [class.is-invalid]="bankTouched && bankError"
+                          [class.is-valid]="bankTouched && !bankError && selectedBank.length > 0">
+                    <option value="">-- Choose your bank --</option>
+                    <option *ngFor="let bank of allBanks" [value]="bank">{{ bank }}</option>
+                  </select>
+                </div>
+                <span *ngIf="bankTouched && bankError" class="text-danger small mt-1 d-block">
+                  <i class="bi bi-exclamation-circle me-1"></i> {{ bankError }}
+                </span>
+                <span *ngIf="selectedBank && !bankError" class="text-success small mt-1 d-block" style="font-size: 0.78rem;">
+                  <i class="bi bi-check-circle-fill me-1"></i> Selected: <strong>{{ selectedBank }}</strong>
+                </span>
+                <div class="mt-2 text-muted" style="font-size: 0.76rem;">
+                  <i class="bi bi-box-arrow-up-right text-primary me-1"></i> You will be securely routed to your bank's authenticated gateway.
+                </div>
+              </div>
+            </div>
+
+            <!-- Pay Button -->
+            <button (click)="onProcessPayment()"
+                    [disabled]="processingPayment || holdCountdownSeconds <= 0 || !isPaymentValid"
+                    class="btn btn-primary w-100 py-3 shadow-sm fw-bold">
+              <span *ngIf="processingPayment" class="spinner-border spinner-border-sm me-2" role="status"></span>
+              <span *ngIf="!processingPayment"><i class="bi bi-shield-lock me-2"></i> Pay ₹{{ createdReservation.totalAmount | number:'1.2-2' }}</span>
+              <span *ngIf="processingPayment">Processing Payment...</span>
+            </button>
+
+            <div class="text-center mt-3 text-muted" style="font-size: 0.78rem;">
+              <i class="bi bi-lock-fill text-success me-1"></i> Your payment information is encrypted and secured
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════════════
+           STEP 3: CONFIRMATION SUCCESS
+           ══════════════════════════════════════════════════════════════ -->
+      <div *ngIf="step === 3 && createdReservation" class="row justify-content-center">
+        <div class="col-md-8 col-lg-7">
+          <div class="card shadow-sm p-5 text-center border">
+            <div class="display-3 text-success mb-3">
+              <i class="bi bi-check-circle-fill"></i>
+            </div>
+            <h2 class="font-serif fw-bold text-dark mb-1">Reservation Confirmed!</h2>
+            <p class="text-muted mb-4">Thank you for booking with StayEase. Your stay is secured.</p>
+
+            <div class="card bg-light p-4 text-start mb-4 border">
+              <div class="row g-3">
+                <div class="col-6">
+                  <div class="small text-muted text-uppercase fw-semibold mb-1"><i class="bi bi-hash text-primary me-1"></i> Booking Reference</div>
+                  <div class="fw-bold fs-6 text-primary">{{ createdReservation.referenceNumber }}</div>
+                </div>
+                <div class="col-6">
+                  <div class="small text-muted text-uppercase fw-semibold mb-1"><i class="bi bi-info-circle text-success me-1"></i> Status</div>
+                  <div>
+                    <span class="badge bg-success px-2 py-1"><i class="bi bi-check2 me-1"></i> {{ createdReservation.status }}</span>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="small text-muted text-uppercase fw-semibold mb-1"><i class="bi bi-buildings text-muted me-1"></i> Property</div>
+                  <div class="fw-bold text-dark">{{ createdReservation.hotelName || hotel?.name }}</div>
+                </div>
+                <div class="col-6">
+                  <div class="small text-muted text-uppercase fw-semibold mb-1"><i class="bi bi-geo-alt text-danger me-1"></i> Location</div>
+                  <div class="fw-bold text-dark">{{ hotelLocation }}</div>
+                </div>
+                <div class="col-6">
+                  <div class="small text-muted text-uppercase fw-semibold mb-1"><i class="bi bi-door-open text-primary me-1"></i> Selected Room</div>
+                  <div class="fw-bold text-dark">{{ createdReservation.roomTypeName || selectedRoomType?.name }}</div>
+                </div>
+                <div class="col-6">
+                  <div class="small text-muted text-uppercase fw-semibold mb-1"><i class="bi bi-calendar-range text-info me-1"></i> Dates & Guests</div>
+                  <div class="fw-bold text-dark">{{ checkInDate | date:'mediumDate' }} – {{ checkOutDate | date:'mediumDate' }} ({{ adults }} Adult{{ adults > 1 ? 's' : '' }}<span *ngIf="children > 0">, {{ children }} Child{{ children > 1 ? 'ren' : '' }}</span>)</div>
+                </div>
+                <div class="col-6">
+                  <div class="small text-muted text-uppercase fw-semibold mb-1"><i class="bi bi-credit-card text-muted me-1"></i> Payment Policy</div>
+                  <div class="fw-bold text-dark">{{ createdReservation.paymentPolicy === 'PREPAID' ? 'Paid Online' : 'Pay at Check-in' }}</div>
+                </div>
+                <div class="col-6">
+                  <div class="small text-muted text-uppercase fw-semibold mb-1"><i class="bi bi-cash-stack text-success me-1"></i> Total Amount</div>
+                  <div class="fw-bold text-primary fs-5">₹{{ createdReservation.totalAmount | number:'1.2-2' }}</div>
+                </div>
+                <div class="col-12" *ngIf="createdReservation.paymentPolicy === 'PAY_LATER' && createdReservation.paymentDueAt">
+                  <div class="small text-muted text-uppercase fw-semibold mb-1"><i class="bi bi-clock-history text-danger me-1"></i> Payment Due At</div>
+                  <div class="fw-bold text-danger">{{ createdReservation.paymentDueAt | date:'medium' }}</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-center gap-3">
+              <a [routerLink]="['/reservations', createdReservation.id]" class="btn btn-primary px-4 py-2">
+                <i class="bi bi-receipt me-1"></i> View Booking Details
+              </a>
+              <a routerLink="/reservations" class="btn btn-outline-secondary px-4 py-2">
+                <i class="bi bi-calendar-check me-1"></i> My Bookings
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

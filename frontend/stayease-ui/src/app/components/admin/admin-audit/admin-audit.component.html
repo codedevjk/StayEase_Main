@@ -1,0 +1,140 @@
+<div class="card shadow-sm border p-4 mb-4">
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+    <div>
+      <h3 class="font-serif fw-bold text-dark mb-1">System Compliance & Audit Trail</h3>
+      <p class="text-muted small mb-0">Inspect immutable, tamper-evident security and operational audit logs</p>
+    </div>
+
+    <!-- Service Selector Tabs -->
+    <div class="btn-group btn-group-sm" role="group">
+      <button (click)="selectedService = 'reservations'; onServiceChange()" class="btn btn-sm" [class.btn-primary]="selectedService === 'reservations'" [class.btn-outline-secondary]="selectedService !== 'reservations'">
+        Reservations
+      </button>
+      <button (click)="selectedService = 'reviews'; onServiceChange()" class="btn btn-sm" [class.btn-primary]="selectedService === 'reviews'" [class.btn-outline-secondary]="selectedService !== 'reviews'">
+        Reviews
+      </button>
+      <button (click)="selectedService = 'users'; onServiceChange()" class="btn btn-sm" [class.btn-primary]="selectedService === 'users'" [class.btn-outline-secondary]="selectedService !== 'users'">
+        Users
+      </button>
+    </div>
+  </div>
+
+  <!-- Filters Row -->
+  <div class="row g-2 align-items-end mt-3 pt-3 border-top">
+    <div class="col-md-3">
+      <label class="form-label small fw-bold text-muted mb-1">Category</label>
+      <input type="text" [(ngModel)]="filterCategory" class="form-control form-control-sm" placeholder="e.g. RESERVATION, PAYMENT">
+    </div>
+    <div class="col-md-2">
+      <label class="form-label small fw-bold text-muted mb-1">Actor ID</label>
+      <input type="number" [(ngModel)]="filterActorId" class="form-control form-control-sm" placeholder="User ID">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label small fw-bold text-muted mb-1">From Date</label>
+      <input type="date" [(ngModel)]="fromDate" class="form-control form-control-sm">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label small fw-bold text-muted mb-1">To Date</label>
+      <input type="date" [(ngModel)]="toDate" class="form-control form-control-sm">
+    </div>
+    <div class="col-md-1">
+      <button (click)="loadAuditLogs(0)" class="btn btn-primary btn-sm w-100">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </div>
+</div>
+
+<app-loading-spinner *ngIf="loading" message="Querying audit records..."></app-loading-spinner>
+<app-error-state *ngIf="errorMessage" [message]="errorMessage" (onRetry)="loadAuditLogs(0)"></app-error-state>
+
+<div *ngIf="!loading && auditEvents.length === 0" class="card shadow-sm border p-5 text-center">
+  <app-empty-state
+    icon="bi bi-journal-text"
+    title="No Audit Events Recorded"
+    message="No records found in the selected service audit repository matching the filter.">
+  </app-empty-state>
+</div>
+
+<!-- Audit Log Table -->
+<div *ngIf="!loading && auditEvents.length > 0" class="card shadow-sm border overflow-hidden">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0 small">
+      <thead class="table-light">
+        <tr>
+          <th>Timestamp</th>
+          <th>Actor</th>
+          <th>Category</th>
+          <th>Action</th>
+          <th>Entity ID</th>
+          <th>Description</th>
+          <th class="text-end">State Snapshot</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let ev of auditEvents">
+          <td class="text-nowrap text-muted">{{ ev.timestamp | date:'medium' }}</td>
+          <td>
+            <span class="badge bg-light text-dark border">
+              #{{ ev.actorId }} ({{ ev.actorRole }})
+            </span>
+          </td>
+          <td><span class="badge bg-secondary">{{ ev.eventCategory }}</span></td>
+          <td><span class="fw-bold text-primary">{{ ev.action }}</span></td>
+          <td class="font-monospace text-muted">{{ ev.entityId }}</td>
+          <td class="text-truncate" style="max-width: 250px;" title="{{ ev.description }}">
+            {{ ev.description }}
+          </td>
+          <td class="text-end">
+            <button *ngIf="ev.beforeJson || ev.afterJson" (click)="viewSnapshot(ev)" class="btn btn-outline-info btn-sm py-0 px-2" title="Inspect JSON Snapshot">
+              <i class="bi bi-code-slash me-1"></i> JSON
+            </button>
+            <span *ngIf="!ev.beforeJson && !ev.afterJson" class="text-muted small">None</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Pagination -->
+<div *ngIf="!loading && totalPages > 1" class="d-flex justify-content-center align-items-center gap-2 mt-4">
+  <button [disabled]="currentPage === 0" (click)="loadAuditLogs(currentPage - 1)" class="btn btn-outline-secondary btn-sm px-3">
+    Previous
+  </button>
+  <span class="text-muted small px-2">Page {{ currentPage + 1 }} of {{ totalPages }}</span>
+  <button [disabled]="currentPage >= totalPages - 1" (click)="loadAuditLogs(currentPage + 1)" class="btn btn-outline-secondary btn-sm px-3">
+    Next
+  </button>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODAL: JSON STATE SNAPSHOT INSPECTOR
+     ══════════════════════════════════════════════════════════════ -->
+<div *ngIf="selectedSnapshotEvent" class="modal d-block bg-dark bg-opacity-50" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content shadow-lg border-0 rounded-3">
+      <div class="modal-header border-bottom">
+        <h5 class="modal-title font-serif fw-bold text-dark">
+          <i class="bi bi-code-square text-primary me-2"></i> Audit Event Snapshot #{{ selectedSnapshotEvent.id }}
+        </h5>
+        <button type="button" class="btn-close" (click)="selectedSnapshotEvent = null"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div class="row g-3">
+          <div class="col-md-6" *ngIf="selectedSnapshotEvent.beforeJson">
+            <label class="form-label small fw-bold text-muted">Before State</label>
+            <pre class="bg-light p-3 rounded border small" style="max-height: 250px; overflow-y: auto;">{{ selectedSnapshotEvent.beforeJson }}</pre>
+          </div>
+          <div class="col-md-6" *ngIf="selectedSnapshotEvent.afterJson">
+            <label class="form-label small fw-bold text-muted">After State</label>
+            <pre class="bg-light p-3 rounded border small" style="max-height: 250px; overflow-y: auto;">{{ selectedSnapshotEvent.afterJson }}</pre>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-top">
+        <button type="button" class="btn btn-secondary btn-sm" (click)="selectedSnapshotEvent = null">Close</button>
+      </div>
+    </div>
+  </div>
+</div>

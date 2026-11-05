@@ -37,12 +37,7 @@
 
     <!-- ── Child modules ─────────────────────────────────────── -->
     <modules>
-        <module>stayease-common</module>
-        <module>gateway-service</module>
-        <module>user-service</module>
-        <module>property-service</module>
-        <module>reservation-service</module>
-        <module>review-service</module>
+        <module>backend</module>
     </modules>
 
     <!-- ── Java 21 compiler ──────────────────────────────────── -->
@@ -83,13 +78,6 @@
                 <version>${spring-cloud.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
-            </dependency>
-
-            <!-- StayEase shared module -->
-            <dependency>
-                <groupId>com.stayease</groupId>
-                <artifactId>stayease-common</artifactId>
-                <version>${project.version}</version>
             </dependency>
 
             <!-- MySQL 8 Connector/J -->

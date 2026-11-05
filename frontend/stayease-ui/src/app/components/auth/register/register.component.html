@@ -1,0 +1,102 @@
+<div class="container py-5 my-4">
+  <div class="row justify-content-center">
+    <div class="col-md-7 col-lg-6">
+      <div class="card shadow-sm border p-4 p-md-5">
+        <div class="text-center mb-4">
+          <i class="bi bi-person-badge-fill text-primary display-4"></i>
+          <h2 class="font-serif fw-bold mt-2">Join StayEase</h2>
+          <p class="text-muted small">Create an account for personalized hotel bookings and guaranteed reservations</p>
+        </div>
+
+        <div *ngIf="errorMessage" class="alert alert-danger small d-flex align-items-center mb-3">
+          <i class="bi bi-exclamation-circle-fill me-2 fs-5"></i>
+          <span>{{ errorMessage }}</span>
+        </div>
+
+        <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
+          <!-- Full Name -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold small text-muted">Full Name</label>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0"><i class="bi bi-person text-muted"></i></span>
+              <input type="text" formControlName="fullName" class="form-control border-start-0" placeholder="e.g. Aditi Sharma"
+                [class.is-invalid]="registerForm.get('fullName')?.touched && registerForm.get('fullName')?.invalid">
+            </div>
+            <div *ngIf="registerForm.get('fullName')?.touched && registerForm.get('fullName')?.errors?.['required']" class="text-danger small mt-1">
+              Full name is required.
+            </div>
+          </div>
+
+          <!-- Email -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold small text-muted">Email Address</label>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0"><i class="bi bi-envelope text-muted"></i></span>
+              <input type="email" formControlName="email" class="form-control border-start-0" placeholder="name@example.com"
+                [class.is-invalid]="registerForm.get('email')?.touched && registerForm.get('email')?.invalid">
+            </div>
+            <div *ngIf="registerForm.get('email')?.touched && registerForm.get('email')?.errors?.['required']" class="text-danger small mt-1">
+              Email address is required.
+            </div>
+            <div *ngIf="registerForm.get('email')?.touched && registerForm.get('email')?.errors?.['email']" class="text-danger small mt-1">
+              Please enter a valid email address.
+            </div>
+          </div>
+
+          <!-- Phone Number -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold small text-muted">Phone Number (10 digits)</label>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0">+91</span>
+              <input type="text" formControlName="phone" class="form-control" placeholder="9876543210" maxlength="10"
+                [class.is-invalid]="registerForm.get('phone')?.touched && registerForm.get('phone')?.invalid">
+            </div>
+            <div *ngIf="registerForm.get('phone')?.touched && registerForm.get('phone')?.invalid" class="text-danger small mt-1">
+              Please enter a valid 10-digit mobile number.
+            </div>
+          </div>
+
+          <!-- Password -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold small text-muted">Password</label>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0"><i class="bi bi-lock text-muted"></i></span>
+              <input type="password" formControlName="password" class="form-control border-start-0" placeholder="Minimum 6 characters"
+                [class.is-invalid]="registerForm.get('password')?.touched && registerForm.get('password')?.invalid">
+            </div>
+            <div *ngIf="registerForm.get('password')?.touched && registerForm.get('password')?.invalid" class="text-danger small mt-1">
+              Password must be at least 6 characters.
+            </div>
+          </div>
+
+          <!-- Confirm Password -->
+          <div class="mb-4">
+            <label class="form-label fw-semibold small text-muted">Confirm Password</label>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0"><i class="bi bi-shield-check text-muted"></i></span>
+              <input type="password" formControlName="confirmPassword" class="form-control border-start-0" placeholder="Repeat your password"
+                [class.is-invalid]="registerForm.get('confirmPassword')?.touched && (registerForm.get('confirmPassword')?.invalid || registerForm.errors?.['mismatch'])">
+            </div>
+            <div *ngIf="registerForm.get('confirmPassword')?.touched && registerForm.errors?.['mismatch']" class="text-danger small mt-1">
+              Passwords do not match.
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <button type="submit" [disabled]="loading" class="btn btn-primary w-100 py-2 d-flex justify-content-center align-items-center shadow-sm">
+            <span *ngIf="loading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            <span *ngIf="!loading"><i class="bi bi-check-circle me-1"></i> Register Account</span>
+            <span *ngIf="loading">Creating Account...</span>
+          </button>
+        </form>
+
+        <div class="text-center mt-4 pt-3 border-top">
+          <p class="text-muted small mb-0">
+            Already have an account? 
+            <a routerLink="/login" class="fw-bold text-primary text-decoration-none">Sign In</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

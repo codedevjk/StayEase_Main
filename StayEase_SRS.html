@@ -1,0 +1,1444 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>StayEase Hotel Reservation Platform — SRS</title>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@400;500;600&display=swap');
+
+    :root {
+      --primary: #1e3a8a;
+      /* Navy Blue */
+      --accent: #d97706;
+      /* Amber 600 */
+      --border: #e5e7eb;
+      --bg: #ffffff;
+      --surface: #f8fafc;
+      --white: #ffffff;
+      --text: #1e293b;
+      --muted: #64748b;
+      --badge-must: #ef4444;
+
+      --sidebar-bg: #f1f5f9;
+      --sidebar-text: #475569;
+      --sidebar-hover: #e2e8f0;
+      --sidebar-accent: #1e3a8a;
+
+      --card-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+      --card-hover-shadow: 0 10px 25px -3px rgb(30 58 138 / 0.15), 0 4px 6px -4px rgb(30 58 138 / 0.05);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      line-height: 1.55;
+      color: var(--text);
+      background: var(--bg);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      font-family: 'Outfit', sans-serif;
+    }
+
+    /* ── Layout ── */
+    .wrapper {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ── Sidebar / TOC ── */
+    #toc {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      width: 280px;
+      min-width: 260px;
+      background: var(--sidebar-bg);
+      color: var(--sidebar-text);
+      padding: 32px 0 40px;
+      flex-shrink: 0;
+      border-right: 1px solid var(--border);
+    }
+
+    #toc h2 {
+      font-size: 13px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text);
+      padding: 0 24px 12px;
+      margin-bottom: 16px;
+      font-weight: 800;
+    }
+
+    #toc a {
+      display: block;
+      padding: 8px 24px;
+      color: var(--sidebar-text);
+      text-decoration: none;
+      font-size: 14px;
+      border-left: 4px solid transparent;
+      transition: all 0.2s ease;
+      font-weight: 500;
+    }
+
+    #toc a:hover,
+    #toc a.active {
+      background: var(--sidebar-hover);
+      border-left-color: var(--primary);
+      color: var(--primary);
+    }
+
+    #toc .toc-sub {
+      padding-left: 44px;
+      font-size: 13.5px;
+      color: #64748b;
+    }
+
+    #toc .toc-sub:hover {
+      color: var(--primary);
+    }
+
+    /* ── Main content ── */
+    main {
+      flex: 1;
+      padding: 24px 48px 48px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    /* ── Cover ── */
+    .cover {
+      text-align: center;
+      padding: 40px 32px;
+      border-radius: 24px;
+      background: #f8fafc;
+      box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.03), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+      margin-bottom: 40px;
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cover::before {
+      content: '';
+      position: absolute;
+      top: -30px;
+      left: -30px;
+      width: 200px;
+      height: 200px;
+      background: rgba(191, 219, 254, 0.5); /* soft blue glow */
+      border-radius: 50%;
+      filter: blur(50px);
+      z-index: 0;
+    }
+
+    .cover::after {
+      content: '';
+      position: absolute;
+      bottom: -30px;
+      right: -30px;
+      width: 250px;
+      height: 250px;
+      background: rgba(217, 119, 6, 0.12); /* soft amber glow */
+      border-radius: 50%;
+      filter: blur(60px);
+      z-index: 0;
+    }
+
+    .cover h1 {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      font-size: 3.2rem;
+      color: #1e293b;
+      letter-spacing: -1.5px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .cover h1 .logo-accent {
+      color: #1e3a8a;
+    }
+
+    .cover .subtitle {
+      font-size: 1.35rem;
+      color: #0f172a;
+      margin: 0 0 20px;
+      font-weight: 600;
+      position: relative;
+      z-index: 1;
+    }
+
+    .cover .tagline {
+      font-size: 1.15rem;
+      color: #64748b;
+      margin-bottom: 32px;
+      font-weight: 500;
+      position: relative;
+      z-index: 1;
+    }
+
+    .cover .contact {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 600;
+      color: #1e3a8a;
+      background: #dbeafe;
+      padding: 6px 16px;
+      border-radius: 9999px;
+      position: relative;
+      z-index: 1;
+    }
+
+    @media print {
+      .cover {
+        box-shadow: none;
+        border: 1px solid #cbd5e1;
+        background: none;
+      }
+      .cover::before, .cover::after {
+        display: none;
+      }
+    }
+
+    /* ── Sections ── */
+    section {
+      margin-bottom: 32px;
+    }
+
+    h2.sec-title {
+      font-size: 1.75rem;
+      color: var(--text);
+      border-bottom: 3px solid #dbeafe;
+      padding-bottom: 8px;
+      margin-bottom: 16px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      display: inline-block;
+    }
+
+    h2.sec-title::after {
+      content: '';
+      display: block;
+      width: 40%;
+      height: 3px;
+      background: var(--primary);
+      margin-top: 12px;
+      border-radius: 4px;
+    }
+
+    h3.sub-title {
+      font-size: 1.25rem;
+      color: var(--text);
+      margin: 28px 0 16px;
+      font-weight: 700;
+    }
+
+    h4.sub2-title {
+      font-size: 1.05rem;
+      color: var(--text);
+      font-weight: 700;
+      margin: 20px 0 12px;
+    }
+
+    p { margin-bottom: 14px; }
+
+    ul, ol { padding-left: 24px; margin-bottom: 16px; }
+
+    li { margin-bottom: 6px; }
+
+    /* ── User Story cards ── */
+    .us-card {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--white);
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: var(--card-shadow);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .us-card:hover {
+      box-shadow: var(--card-hover-shadow);
+      transform: translateY(-4px);
+      border-color: #bfdbfe;
+    }
+
+    .us-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 6px;
+      height: 100%;
+      background: var(--primary);
+    }
+
+    .us-card h3 {
+      font-size: 1.25rem;
+      color: var(--text);
+      padding-bottom: 12px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid #f1f5f9;
+      font-weight: 800;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .us-meta {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      background: var(--surface);
+      padding: 12px 16px;
+      border-radius: 8px;
+      border: 1px solid #f1f5f9;
+    }
+
+    .us-meta span {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .us-meta strong {
+      color: var(--text);
+      margin-right: 6px;
+      font-weight: 600;
+    }
+
+    .badge-must {
+      background: #fee2e2;
+      color: #b91c1c;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 12px;
+    }
+
+    /* ── Tables ── */
+    .tbl-wrap {
+      overflow-x: auto;
+      margin-bottom: 24px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 14.5px;
+    }
+
+    thead th {
+      background: var(--surface);
+      color: var(--text);
+      padding: 12px 16px;
+      text-align: left;
+      font-weight: 700;
+      border-bottom: 2px solid var(--border);
+    }
+
+    tbody tr {
+      border-bottom: 1px solid #f1f5f9;
+      transition: background 0.2s ease;
+    }
+
+    tbody tr:hover {
+      background: var(--surface);
+    }
+
+    td {
+      padding: 12px 16px;
+      vertical-align: middle;
+      color: #475569;
+    }
+
+    td strong {
+      color: var(--text);
+    }
+
+    .scope-impl {
+      color: #059669;
+      font-weight: 700;
+    }
+
+    /* ── Callout ── */
+    .callout {
+      border-left: 4px solid var(--primary);
+      background: #dbeafe;
+      padding: 16px 20px;
+      margin: 16px 0;
+      color: #1e3a8a;
+      font-size: 14px;
+      border-radius: 0 8px 8px 0;
+      line-height: 1.55;
+    }
+
+    /* ── Inline Code ── */
+    code {
+      background: #f1f5f9;
+      color: var(--primary);
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-family: 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', monospace;
+      font-size: 13.5px;
+      font-weight: 500;
+    }
+
+    /* ── File Groups ── */
+    .file-group {
+      background: #1e293b;
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin: 16px 0 24px;
+      box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.1);
+    }
+
+    .file-group .fg-label {
+      color: #38bdf8;
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 16px;
+      display: inline-block;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 6px;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .file-group ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .file-group li {
+      font-family: 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', monospace;
+      font-size: 14px;
+      color: #f8fafc;
+      padding: 6px 0;
+      margin: 0;
+      line-height: 1.6;
+    }
+
+    .file-group li .tag {
+      color: #d97706;
+      background: rgba(217, 119, 6, 0.15);
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-left: 12px;
+    }
+
+    /* ── Checklist Blocks ── */
+    .checklist-block {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: var(--card-shadow);
+    }
+
+    .checklist-block h4 {
+      color: var(--text);
+      font-size: 1.2rem;
+      font-weight: 800;
+      margin: 0 0 20px;
+    }
+
+    .checklist-block ul {
+      list-style: none;
+      padding-left: 0;
+      margin: 0;
+    }
+
+    .checklist-block li {
+      padding: 12px 0 12px 36px;
+      font-size: 15.5px;
+      border-bottom: 1px solid #f1f5f9;
+      position: relative;
+      color: #475569;
+    }
+
+    .checklist-block li:last-child {
+      border-bottom: none;
+    }
+
+    .checklist-block li::before {
+      content: '✓';
+      position: absolute;
+      left: 0;
+      top: 12px;
+      font-size: 16px;
+      font-weight: 900;
+      color: var(--primary);
+      background: #dbeafe;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ── Module / Service blocks ── */
+    .module-block, .service-block {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-bottom: 20px;
+      box-shadow: var(--card-shadow);
+      border-left: 4px solid var(--primary);
+    }
+
+    .module-block h4, .service-block h3 {
+      color: var(--text);
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+
+    /* ── Pill groups ── */
+    .pill-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .pill {
+      background-color: #dbeafe;
+      color: #1e3a8a;
+      padding: 6px 16px;
+      border-radius: 9999px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .tech-category {
+      font-style: italic;
+      font-weight: 800;
+      color: #1e293b;
+      font-size: 1.1rem;
+      margin-top: 16px;
+      margin-bottom: 12px;
+    }
+
+    .sonar-a {
+      color: #059669;
+      font-weight: 700;
+    }
+
+    /* ── Print ── */
+    @media print {
+      #toc { display: none; }
+      main { padding: 20px; max-width: 100%; }
+      .us-card, .file-group, .checklist-block { break-inside: avoid; }
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+<!-- ════════════════════ SIDEBAR TOC ════════════════════ -->
+<nav id="toc">
+  <h2>🏨 StayEase SRS</h2>
+  <a href="#cover">Cover</a>
+  <a href="#s1">1. Project Overview</a>
+  <a href="#s2">2. System Architecture</a>
+  <a class="toc-sub" href="#s2-1">2.1 Infrastructure</a>
+  <a class="toc-sub" href="#s2-2">2.2 Auth Design</a>
+  <a href="#s3">3. Getting Started</a>
+  <a href="#s4">4. User Stories</a>
+  <a class="toc-sub" href="#us01">US01 Registration</a>
+  <a class="toc-sub" href="#us02">US02 Login / Logout</a>
+  <a class="toc-sub" href="#us03">US03 Profile</a>
+  <a class="toc-sub" href="#us04">US04 Hotel Mgmt</a>
+  <a class="toc-sub" href="#us05">US05 Room Types</a>
+  <a class="toc-sub" href="#us06">US06 Physical Rooms</a>
+  <a class="toc-sub" href="#us07">US07 Browse Hotels</a>
+  <a class="toc-sub" href="#us08">US08 Hotel Detail</a>
+  <a class="toc-sub" href="#us09">US09 Make Reservation</a>
+  <a class="toc-sub" href="#us10">US10 Payment</a>
+  <a class="toc-sub" href="#us11">US11 My Reservations</a>
+  <a class="toc-sub" href="#us12">US12 Check-In/Out</a>
+  <a class="toc-sub" href="#us13">US13 Reviews</a>
+  <a class="toc-sub" href="#us14">US14 Admin Reservations</a>
+  <a class="toc-sub" href="#us15">US15 Admin Dashboard</a>
+  <a class="toc-sub" href="#s4-1">4.1 Story Summary</a>
+  <a href="#s5">5. Data Persistence</a>
+  <a href="#s6">6. Identifier Rules</a>
+  <a href="#s7">7. Frontend Components</a>
+  <a href="#s8">8. Backend Components</a>
+  <a href="#s9">9. Non-Functional Req.</a>
+  <a href="#s10">10. Implementation</a>
+  <a href="#s11">11. Code Quality</a>
+  <a href="#s12">12. Final Deliverables</a>
+</nav>
+
+<!-- ════════════════════════════ MAIN ════════════════════════════ -->
+<main>
+
+<!-- ── Cover ── -->
+<div class="cover" id="cover">
+  <h1>
+    🏨 <span>Stay<span class="logo-accent">Ease</span></span>
+  </h1>
+  <div class="subtitle">Hotel Reservation Platform<br/><span style="font-size:1.15rem; color:#64748b;">Capstone Project SRS</span></div>
+  <div class="contact">Author: Jagmohan Kushwaha</div>
+</div>
+
+<!-- ── Section 1 ── -->
+<section id="s1">
+  <h2 class="sec-title">1. Project Overview</h2>
+  <p>
+    <strong>StayEase</strong> is a modern, full-stack hotel reservation platform designed to streamline the process of discovering, booking, and managing hotel stays across India. It provides an end-to-end digital platform enabling guests to securely register, search hotels by destination, view detailed room availability, simulate online payments, and manage their reservations — from booking through check-in, check-out, and post-stay reviews.
+  </p>
+  <p>The application strictly enforces role-based workflows for two primary user types:</p>
+  <ul>
+    <li>
+      <strong>Guests (ROLE_USER):</strong> Can register, log in, browse the hotel catalog with search and filters, view hotel details with real-time room availability, book rooms (PREPAID with 10-minute inventory hold or PAY_LATER), manage their reservations (view, cancel, check-in, check-out, download invoice), and submit one review per completed stay.
+    </li>
+    <li>
+      <strong>Administrators (ROLE_ADMIN):</strong> Can log in to the admin portal and manage hotel properties (CRUD), room types, physical rooms and housekeeping status, pricing/rate overrides, all reservations (admin-initiated check-in, check-out, cancellation, no-show, refund), review moderation (approve/reject), and view audit trails for all system events.
+    </li>
+  </ul>
+  <p>The project is built as a <strong>microservices-based architecture</strong> using Java 21, Spring Boot 3.3.5, Spring Cloud (Gateway + Consul), Spring Security with JWT, and Angular 16 — demonstrating modern enterprise development practices at a capstone-level of complexity.</p>
+</section>
+
+<!-- ── Section 2 ── -->
+<section id="s2">
+  <h2 class="sec-title">2. System Architecture</h2>
+  <p>
+    The solution follows a <strong>Microservices Architecture</strong> consisting of four business services: User Service, Property Service, Reservation Service, and Review Service, with communication managed through <strong>Spring Cloud Gateway</strong> and <strong>Spring Cloud Consul</strong>. All frontend requests must pass through the API Gateway. Inter-service communication uses <strong>WebClient</strong> (reactive) with <strong>Resilience4j</strong> circuit breakers.
+  </p>
+  <h3 class="sub-title" id="s2-1">2.1 Infrastructure Mapping</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Service</th>
+          <th>Port</th>
+          <th>Consul Name</th>
+          <th>Database Schema</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>API Gateway</strong></td>
+          <td>8080</td>
+          <td><code>stayease-gateway</code></td>
+          <td>None</td>
+        </tr>
+        <tr>
+          <td><strong>Consul (Discovery)</strong></td>
+          <td>8500</td>
+          <td>None</td>
+          <td>None</td>
+        </tr>
+        <tr>
+          <td><strong>User Service</strong></td>
+          <td>8081</td>
+          <td><code>stayease-user-service</code></td>
+          <td><code>stayease_user_db</code></td>
+        </tr>
+        <tr>
+          <td><strong>Property Service</strong></td>
+          <td>8082</td>
+          <td><code>stayease-property-service</code></td>
+          <td><code>stayease_property_db</code></td>
+        </tr>
+        <tr>
+          <td><strong>Reservation Service</strong></td>
+          <td>8083</td>
+          <td><code>stayease-reservation-service</code></td>
+          <td><code>stayease_reservation_db</code></td>
+        </tr>
+        <tr>
+          <td><strong>Review Service</strong></td>
+          <td>8084</td>
+          <td><code>stayease-review-service</code></td>
+          <td><code>stayease_review_db</code></td>
+        </tr>
+        <tr>
+          <td><strong>Angular Frontend</strong></td>
+          <td>4200</td>
+          <td>None</td>
+          <td>localStorage (JWT session)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p><em>Note: StayEase uses <strong>separate, dedicated MySQL databases per microservice</strong> to ensure true service isolation. Each service owns its data exclusively and communicates with other services only via REST APIs — never via shared database joins.</em></p>
+
+  <h3 class="sub-title" id="s2-2">2.2 Authentication &amp; Authorization Design</h3>
+  <div class="callout">
+    <strong>Important:</strong> StayEase uses a <strong>JWT-Based Stateless Security Design</strong>. On successful login, the User Service issues a signed JWT (JJWT library). The token is stored in browser <code>localStorage</code> and cleared on logout. Every downstream microservice runs its own <code>JwtAuthenticationFilter</code> (Spring Security) to validate the Bearer token, extract the <code>UserPrincipal</code> (user ID, email, role, token version), and establish the security context. Furthermore, downstream services verify the <code>tokenVersion</code> claim with the User Service (fail-closed check via <code>UserServiceClient</code>) so that existing JWTs are immediately rejected if a password reset or email update has occurred. The API Gateway manages ingress routing, attaches a unique <code>X-Correlation-ID</code> to every request and response, and passes the Bearer token downstream. Internal inter-service endpoints (<code>/internal/**</code>) are protected and called only via WebClient from trusted services.
+  </div>
+</section>
+
+<!-- ── Section 3 ── -->
+<section id="s3">
+  <h2 class="sec-title">3. Getting Started</h2>
+  <h3 class="sub-title">3.1 Setup Steps</h3>
+  <ol class="steps">
+    <li>
+      <div>Start Consul for service discovery: <code>consul agent -dev</code></div>
+    </li>
+    <li>Ensure MySQL 8+ is running on port <code>3306</code>.</li>
+    <li>
+      <div>Initialize the databases by running each SQL DDL script from <code>src/main/resources</code> of each microservice:
+        <br/><code>mysql -u root -p &lt; backend/user-service/src/main/resources/user_db.sql</code>
+        <br/><code>mysql -u root -p &lt; backend/property-service/src/main/resources/property_db.sql</code>
+        <br/><code>mysql -u root -p &lt; backend/reservation-service/src/main/resources/reservation_db.sql</code>
+        <br/><code>mysql -u root -p &lt; backend/review-service/src/main/resources/review_db.sql</code>
+      </div>
+    </li>
+    <li>
+      <div>Start each backend microservice in separate terminals:
+        <br/><code>cd backend/api-gateway &amp;&amp; mvn spring-boot:run</code>
+        <br/><code>cd backend/user-service &amp;&amp; mvn spring-boot:run</code>
+        <br/><code>cd backend/property-service &amp;&amp; mvn spring-boot:run</code>
+        <br/><code>cd backend/reservation-service &amp;&amp; mvn spring-boot:run</code>
+        <br/><code>cd backend/review-service &amp;&amp; mvn spring-boot:run</code>
+      </div>
+    </li>
+    <li>
+      <div>Bootstrap the admin account (one-time): add <code>stayease.admin-bootstrap.enabled=true</code> and <code>stayease.admin-bootstrap.admin-password=Admin@1234</code> to user-service config, restart the User Service. The generated admin email defaults to <code>admin@stayease.local</code>. <strong>Disable the flag immediately after the first run.</strong></div>
+    </li>
+    <li>
+      <div>Start the Angular application: run <code>npm install</code> then <code>ng serve</code> from <code>frontend/stayease-ui/</code>.</div>
+    </li>
+    <li>
+      <div>Open <code>http://localhost:4200</code> and log in with the bootstrapped admin credentials to seed hotel and room data via the Admin Portal.</div>
+    </li>
+  </ol>
+</section>
+
+<!-- ── Section 4 ── -->
+<section id="s4">
+  <h2 class="sec-title">4. User Stories</h2>
+  <p>The following fifteen user stories define the complete functional scope of the StayEase platform and have been fully implemented in this repository.</p>
+
+  <!-- US01 -->
+  <div class="us-card" id="us01">
+    <h3>US 01 &mdash; User Registration</h3>
+    <div class="us-meta">
+      <span><strong>Priority:</strong> <span class="badge-must">Must Have</span></span>
+      <span><strong>Primary Microservice:</strong> User Service</span>
+    </div>
+    <h4 class="sub2-title">Acceptance Criteria</h4>
+    <ul>
+      <li>As an anonymous visitor, I want to securely register so that I can access the StayEase platform and book hotel stays.</li>
+      <li>Customers shall be able to register using their Full Name, Email Address, Phone Number, and Password.</li>
+      <li>Email addresses must be unique across the platform; duplicate registrations shall not be allowed, and the system must return a clear validation error.</li>
+      <li>Passwords must be securely hashed and encrypted before storage; plaintext passwords shall never be saved or logged.</li>
+      <li>Newly registered accounts shall automatically be assigned a standard customer role; administrator privileges cannot be self-assigned.</li>
+      <li>Mandatory fields must be validated before registration, including valid email formatting, non-empty phone number, and minimum password length.</li>
+      <li>Clear and descriptive validation error messages must appear immediately below invalid fields if inputs are invalid or missing.</li>
+      <li>Upon successful registration, the system shall display a success confirmation and smoothly redirect the user to the login page.</li>
+    </ul>
+  </div>
+
+  <!-- US02 -->
+  <div class="us-card" id="us02">
+    <h3>US 02 &mdash; User Login &amp; Logout</h3>
+    <div class="us-meta">
+      <span><strong>Priority:</strong> <span class="badge-must">Must Have</span></span>
+      <span><strong>Primary Microservice:</strong> User Service</span>
+    </div>
+    <h4 class="sub2-title">Acceptance Criteria</h4>
+    <ul>
+      <li>As a registered user, I want to log in so that I can access features suited to my assigned role.</li>
+      <li>Users shall authenticate using their registered Email Address and Password.</li>
+      <li>Upon successful authentication, the system issues a secure authorization token that maintains the user's active session.</li>
+      <li>Session information is securely preserved across page refreshes and cleared immediately upon logout.</li>
+      <li>Upon successful login, standard customers are directed to the hotel search page, while administrators are redirected to the management dashboard.</li>
+      <li>Users shall be able to log out securely at any time, which immediately terminates their active session and returns them to the home page.</li>
+      <li>The system enforces active session validation across all services, ensuring revoked or outdated sessions are immediately denied access.</li>
+      <li>Mandatory fields must be validated before submission, and clear error messages shall be displayed for failed attempts.</li>
+    </ul>
+  </div>
+
+  <!-- US03 -->
+  <div class="us-card" id="us03">
+    <h3>US 03 &mdash; View &amp; Update Profile</h3>
+    <div class="us-meta">
+      <span><strong>Priority:</strong> <span class="badge-must">Must Have</span></span>
+      <span><strong>Primary Microservice:</strong> User Service</span>
+    </div>
+    <h4 class="sub2-title">Acceptance Criteria</h4>
+    <ul>
+      <li>As an authenticated guest, I want to view and manage my profile details so that my account information remains accurate.</li>
+      <li>The system shall display the guest's Full Name, Email Address, Phone Number, and Address.</li>
+      <li>Guests can update their personal information including Full Name, Phone Number, and Address.</li>
+      <li>Guests can update their Email Address by verifying their current password for enhanced account security.</li>
+      <li>Updating an email address invalidates previous login sessions across all devices, requiring a fresh login with the new credentials.</li>
+      <li>Administrators can perform password resets for user accounts when required, which also terminates existing sessions for that user.</li>
+      <li>Profile management operations securely deduce identity from the active login session, strictly preventing unauthorized modifications across accounts.</li>
+      <li>Clear validation and success messages shall be displayed for all profile updates.</li>
+    </ul>
+  </div>
+
+  <!-- US04 -->
+  <div class="us-card" id="us04">
+    <h3>US 04 &mdash; Admin Hotel Property Management</h3>
+    <div class="us-meta">
+      <span><strong>Priority:</strong> <span class="badge-must">Must Have</span></span>
+      <span><strong>Primary Microservice:</strong> Property Service</span>
+    </div>
+    <h4 class="sub2-title">Acceptance Criteria</h4>
+    <ul>
+      <li>As an administrator, I want to manage hotel properties so that the platform catalog remains accurate and comprehensive.</li>
+      <li>Administrators can view a structured and paginated list of all hotel properties, showing Property Name, Destination, Star Rating, and Active Status.</li>
+      <li>Hotel property names shall be displayed cleanly without technical clutter, duplicate prefixes, or trailing empty formatting characters.</li>
+      <li>Administrators can add new hotel properties by providing Name, Destination, Address, Contact Email, Contact Phone, Description, Star Rating (one to five stars), Image URL, and selectable Amenities.</li>
+      <li>Administrators can edit all metadata and contact details of an existing hotel property.</li>
+      <li>Administrators can toggle a hotel's status between Active and Inactive.</li>
+      <li>Only properties marked as Active are visible in the public search catalog; Inactive properties are hidden from customer view and cannot be booked.</li>
+      <li>All hotel creation, update, and status change actions are permanently recorded in an administrative audit trail.</li>
+    </ul>
+  </div>
+
+  <!-- US05 -->
+  <div class="us-card" id="us05">
+    <h3>US 05 &mdash; Admin Room Type Management</h3>
+    <div class="us-meta">
+      <span><strong>Priority:</strong> <span class="badge-must">Must Have</span></span>
+      <span><strong>Primary Microservice:</strong> Property Service</span>
+    </div>
+    <h4 class="sub2-title">Acceptance Criteria</h4>
+    <ul>
+      <li>As an administrator, I want to manage room types for each hotel so that customers can choose from distinct accommodation options.</li>
+      <li>Administrators can create room types under a hotel, specifying Name, Description, Maximum Guest Capacity, Base Nightly Rate in Indian Rupees, and Image URL.</li>
+      <li>Administrators can modify room type details and adjust standard nightly rates.</li>
+      <li>Administrators can define date-specific pricing overrides on any room type to accommodate seasonal variations, holidays, and high-demand periods.</li>
+      <li>The system automatically prioritizes active date-specific rates over standard base rates when calculating stay totals for requested date ranges.</li>
+      <li>Deleting or retiring room types must maintain historical integrity for existing bookings.</li>
+    </ul>
+  </div>
+
+  <!-- US06 -->
+  <div class="us-card" id="us06">
+    <h3>US 06 &mdash; Admin Physical Room &amp; Housekeeping Management</h3>
+    <div class="us-meta">
+      <span><strong>Priority:</strong> <span class="badge-must">Must Have</span></span>
+      <span><strong>Primary Microservice:</strong> Property Service</span>
+    </div>
+    <h4 class="sub2-title">Acceptance Criteria</h4>
+    <ul>
+      <li>As an administrator, I want to manage physical rooms and housekeeping statuses so that inventory accurately reflects operational readiness.</li>
+      <li>Physical rooms track both a Cleanliness Status (Clean, Dirty, or Inspecting) and an Operational Status (Operational or Out of Service).</li>
+      <li>Administrators can add physical rooms by specifying Room Number, Floor, Room Type, and initial cleanliness status.</li>
+      <li>Administrators can update room cleanliness status as rooms are serviced, inspected, and made ready for arriving guests.</li>
+      <li>Administrators can mark individual physical rooms as Out of Service for maintenance, temporarily excluding them from sellable inventory.</li>
+      <li>Only rooms marked as Operational contribute to the hotel's bookable capacity for that room type.</li>
+      <li>Upon booking confirmation, the system automatically assigns an available physical room to the reservation.</li>
+    </ul>
+  </div>
+
+  <!-- US07 -->
+  <div class="us-card" id="us07">
+    <h3>US 07 &mdash; Browse &amp; Search Hotels</h3>
+    <div class="us-meta">
+      <span><strong>Priority:</strong> <span class="badge-must">Must Have</span></span>
+      <span><strong>Primary Microservice:</strong> Property Service</span>
+    </div>
+    <h4 class="sub2-title">Acceptance Criteria</h4>
+    <ul>
+      <li>As a guest, I want to search and filter available hotels using destination, dates, and party size so that I can find suitable accommodations.</li>
+      <li>The homepage provides an intuitive horizontal search interface with quick-select shortcuts for popular trending travel destinations.</li>
+      <li>Customers can search by specifying Destination, Check-In Date, Check-Out Date, Number of Rooms, Adults count, and Children count.</li>
+      <li>Validation Rules:
+        <ol style="margin-top: 6px; padding-left: 20px;">
+          <li>Check-in date cannot be in the past.</li>
+          <li>Check-out date must be strictly after the check-in date.</li>
+          <li><strong>At least one adult is required to make a booking; reservations for unaccompanied children are strictly disallowed.</strong></li>
+        </ol>
+      </li>
+      <li>If search inputs violate validation rules, helpful error messages appear immediately beneath the fields, and navigation is paused until corrected.</li>
+      <li>The system automatically calculates room requirements based on standard hotel occupancy norms of two adults per room, accommodating children alongside adults.</li>
+      <li>Search results display only active hotels matching the criteria, showing property name, destination, star rating, verified guest review score, starting price per night, and thumbnail photography.</li>
+      <li>Results can be filtered by star rating and price range, with clean pagination for ease of browsing.</li>
+    </ul>
+  </div>
+
+  <!-- US08 -->
+  <div class="us-card" id="us08">
+    <h3>US 08 &mdash; View Hotel Detail &amp; Room Availability</h3>
+    <div class="us-meta">
+      <span><strong>Priority:</strong> <span class="badge-must">Must Have</span></span>
+      <span><strong>Primary Microservice:</strong> Property Service + Reservation Service</span>
+    </div>
+    <h4 class="sub2-title">Acceptance Criteria</h4>
+    <ul>
+      <li>As a guest, I want to view detailed property information and real-time room availability for my selected dates so that I can choose a room.</li>
+      <li>The hotel detail page showcases property name, destination, address, star rating, verified guest ratings, amenity badges, and high-resolution photos.</li>
+      <li>The system checks real-time room availability across the selected date range and presents distinct visual states for each room type:
+        <ol style="margin-top: 6px; padding-left: 20px;">
+          <li><strong>Sold Out / Zero Rooms Available:</strong> The room card is visually subdued and clearly labeled as Sold Out or Unavailable for selected dates, with the reservation button disabled.</li>
+          <li><strong>Low Inventory:</strong> When only one to three rooms remain, an urgent indicator highlights the limited availability.</li>
+          <li><strong>Normal Availability:</strong> Displays the exact count of available rooms ready for booking.</li>
+        </ol>
+      </li>
+      <li>Pricing information clearly outlines the nightly rate and the estimated total cost for the stay, including applicable taxes.</li>
+      <li>Verified guest reviews submitted by past travelers are displayed in a dedicated reviews section below the room types.</li>
+      <li>Unauthenticated visitors attempting to book a room are prompted to log in or register, returning seamlessly to their booking upon sign-in.</li>
+    </ul>
+  </div>
+
+  <!-- US09 -->
+  <div class="us-card" id="us09">
+    <h3>US 09 &mdash; Make a Hotel Reservation</h3>
+    <div class="us-meta">
+      <span><strong>Priority:</strong> <span class="badge-must">Must Have</span></span>
+      <span><strong>Primary Microservice:</strong> Reservation Service</span>
+    </div>
+    <h4 class="sub2-title">Acceptance Criteria</h4>
+    <ul>
+      <li>As an authenticated guest, I want to book a room so that I can secure accommodations for my stay.</li>
+      <li>The booking flow guides the customer through a step-by-step confirmation: reviewing stay details, selecting a payment policy, and viewing confirmation.</li>
+      <li>The system presents a transparent, itemized cost summary showing the lodging subtotal, mandatory taxes, and grand total.</li>
+      <li>Customers choose between two flexible payment policies:
+        <ol style="margin-top: 6px; padding-left: 20px;">
+          <li><strong>Prepaid:</strong> The guest completes online payment during booking, which reserves the room under a temporary ten-minute inventory hold while payment is processed.</li>
+          <li><strong>Pay at Property:</strong> The booking is confirmed immediately without upfront payment, with payment collected upon arrival at the property.</li>
+        </ol>
+      </li>
+      <li>Inventory is verified across every night of the stay to prevent overbooking, even during peak concurrent traffic.</li>
+      <li>Upon successful confirmation, the system generates a unique, human-friendly booking reference number (e.g., SE-2026-9826).</li>
+      <li>An operational physical room is automatically assigned to the reservation, and an immutable audit event is logged.</li>
+    </ul>
+  </div>
+
+  <!-- US10 -->
+  <div class="us-card" id="us10">
+    <h3>US 10 &mdash; Payment Processing (Simulated)</h3>
+    <div class="us-meta">
+      <span><strong>Priority:</strong> <span class="badge-must">Must Have</span></span>
+      <span><strong>Primary Microservice:</strong> Reservation Service</span>
+    </div>
+    <h4 class="sub2-title">Acceptance Criteria</h4>
+    <ul>
+      <li>As a customer choosing a prepaid reservation, I want to complete payment through a simulated checkout so that my booking is officially confirmed.</li>
+      <li>The checkout interface displays the booking reference number, total amount due, and three simulated payment options:
+        <ol style="margin-top: 6px; padding-left: 20px;">
+          <li><strong>UPI:</strong> Accepts a valid Virtual Payment Address, validating the standard payment handle format.</li>
+          <li><strong>Credit or Debit Card:</strong> Accepts a sixteen-digit card number, cardholder name, valid future expiration date, and security code, validating each field individually.</li>
+          <li><strong>Net Banking:</strong> Enables selecting from major banking institutions.</li>
+        </ol>
+      </li>
+      <li>The simulation provides options to demonstrate both successful and unsuccessful payment transactions for testing and verification purposes.</li>
+      <li>Upon a successful transaction:
+        <ul>
+          <li>The reservation is confirmed, the inventory hold is converted to an active booking, payment status is marked as paid, and a printable invoice is generated.</li>
+        </ul>
+      </li>
+      <li>Upon a failed transaction:
+        <ul>
+          <li>The reservation is marked as payment failed, the temporary inventory hold is immediately released back to available inventory, and the customer is given the option to retry.</li>
+        </ul>
+      </li>
+      <li>If a prepaid booking remains unpaid past the ten-minute window, a background process automatically cancels the expired hold and returns the room to available inventory.</li>
+    </ul>
+  </div>
+
+  <!-- US11 -->
+  <div class="us-card" id="us11">
+    <h3>US 11 &mdash; My Reservations</h3>
+    <div class="us-meta">
+      <span><strong>Priority:</strong> <span class="badge-must">Must Have</span></span>
+      <span><strong>Primary Microservice:</strong> Reservation Service</span>
+    </div>
+    <h4 class="sub2-title">Acceptance Criteria</h4>
+    <ul>
+      <li>As a guest, I want to view and manage all my past and upcoming reservations so that I have complete control over my travel plans.</li>
+      <li>The system provides a centralized dashboard showing all bookings associated with the customer's account, arranged chronologically with the newest first.</li>
+      <li>Each reservation card displays the booking reference number, hotel name, room type, travel dates, duration of stay, guest count, total cost, payment policy, and current status.</li>
+      <li>Bookings progress through distinct operational statuses: Pending Payment, Confirmed, Checked In, Checked Out, Cancelled, No-Show, or Payment Failed.</li>
+      <li>Customers can view and download an itemized tax invoice for any confirmed or completed reservation.</li>
+      <li>Customers can cancel confirmed bookings before the check-in date by providing a cancellation reason, which immediately returns the reserved room to open inventory.</li>
+      <li>Once a stay is completed and checked out, the customer is presented with an option to write a review, provided they have not already submitted one for that booking.</li>
+    </ul>
+  </div>
+
+  <!-- US12 -->
+  <div class="us-card" id="us12">
+    <h3>US 12 &mdash; Self Check-In &amp; Check-Out</h3>
+    <div class="us-meta">
+      <span><strong>Priority:</strong> <span class="badge-must">Must Have</span></span>
+      <span><strong>Primary Microservice:</strong> Reservation Service</span>
+    </div>
+    <h4 class="sub2-title">Acceptance Criteria</h4>
+    <ul>
+      <li>As a guest, I want to perform self check-in and check-out so that I can streamline my arrival and departure without waiting in line.</li>
+      <li>Guests can initiate self check-in for confirmed reservations on or after the scheduled check-in date, updating their booking status to Checked In.</li>
+      <li>Guests can initiate self check-out at the conclusion of their stay, updating their booking status to Checked Out and recording the departure timestamp.</li>
+      <li>Completing check-out automatically alerts property housekeeping by updating the physical room status to Dirty, scheduling it for turnover and sanitization.</li>
+      <li>Successful check-out unlocks the guest's eligibility to rate and review their stay.</li>
+      <li>Customers can only check-in and check-out of their own reservations; unauthorized attempts are strictly rejected.</li>
+    </ul>
+  </div>
+
+  <!-- US13 -->
+  <div class="us-card" id="us13">
+    <h3>US 13 &mdash; Submit &amp; View Reviews</h3>
+    <div class="us-meta">
+      <span><strong>Priority:</strong> <span class="badge-must">Must Have</span></span>
+      <span><strong>Primary Microservice:</strong> Review Service</span>
+    </div>
+    <h4 class="sub2-title">Acceptance Criteria</h4>
+    <ul>
+      <li>As a customer who has completed a stay, I want to share my feedback and ratings so that other travelers can make informed decisions.</li>
+      <li>Reviews can only be submitted for completed reservations with a Checked Out status; pending, active, or cancelled stays cannot be reviewed.</li>
+      <li>The system strictly permits only one review per booking per customer; once a review is submitted, duplicate attempts are rejected across all layers of the application.</li>
+      <li>A review consists of a numerical star rating from one to five stars and written commentary describing the guest's experience.</li>
+      <li>Newly submitted reviews by verified guests are published to the platform, and the hotel's overall average rating and review count are updated automatically.</li>
+      <li>Administrators can review customer feedback and remove inappropriate content by recording a documented moderation reason, which withdraws the review from public display.</li>
+      <li>Hotel listings display only active, published reviews from verified guests.</li>
+    </ul>
+  </div>
+
+  <!-- US14 -->
+  <div class="us-card" id="us14">
+    <h3>US 14 &mdash; Admin Reservation Management</h3>
+    <div class="us-meta">
+      <span><strong>Priority:</strong> <span class="badge-must">Must Have</span></span>
+      <span><strong>Primary Microservice:</strong> Reservation Service</span>
+    </div>
+    <h4 class="sub2-title">Acceptance Criteria</h4>
+    <ul>
+      <li>As an administrator, I want to view and manage all platform reservations so that I can maintain operational control and assist guests.</li>
+      <li>Administrators can view a comprehensive master table of all reservations across all hotels, with search and filtering capabilities.</li>
+      <li>Administrators can perform administrative actions on any booking, including processing check-ins, check-outs, cancellations, and payment reconciliations.</li>
+      <li>Administrators can record guest No-Shows when customers fail to arrive, which safely frees the reserved room back into sellable inventory without issuing an unwarranted refund.</li>
+      <li>Every administrative action is permanently logged in the reservation audit trail with the administrator's identity and timestamp.</li>
+    </ul>
+  </div>
+
+  <!-- US15 -->
+  <div class="us-card" id="us15">
+    <h3>US 15 &mdash; Admin Dashboard &amp; Audit Trails</h3>
+    <div class="us-meta">
+      <span><strong>Priority:</strong> <span class="badge-must">Must Have</span></span>
+      <span><strong>Primary Microservice:</strong> All Services</span>
+    </div>
+    <h4 class="sub2-title">Acceptance Criteria</h4>
+    <ul>
+      <li>As an administrator, I want to monitor operational metrics and inspect system audit trails so that I can track business performance and ensure accountability.</li>
+      <li>The management dashboard displays real-time operational statistics including overall occupancy percentage, scheduled check-ins and check-outs for the day, total revenue collected, pending payments, and a status-by-status breakdown of all bookings.</li>
+      <li>The platform provides a centralized audit log viewer that consolidates activity records across user accounts, hotel properties, reservations, payments, and reviews.</li>
+      <li>Administrators can search and filter audit events by service category, event type, date range, or specific user.</li>
+      <li>Each audit entry provides a clear explanation of what occurred, who performed the action, when it took place, and detailed snapshots of data before and after the change.</li>
+      <li>Audit records are strictly permanent and tamper-resistant; they cannot be edited or deleted by any user.</li>
+    </ul>
+  </div>
+
+  <!-- 4.1 Summary Table -->
+  <h3 class="sub-title" id="s4-1">4.1 Final User Story List</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>User Story</th>
+          <th>Module</th>
+          <th>Microservice</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>US01</strong></td><td>User Registration</td><td>User Service</td><td class="scope-impl">Fully Implemented</td></tr>
+        <tr><td><strong>US02</strong></td><td>User Login &amp; Logout</td><td>User Service</td><td class="scope-impl">Fully Implemented</td></tr>
+        <tr><td><strong>US03</strong></td><td>View &amp; Update Profile</td><td>User Service</td><td class="scope-impl">Fully Implemented</td></tr>
+        <tr><td><strong>US04</strong></td><td>Admin Hotel Property Mgmt</td><td>Property Service</td><td class="scope-impl">Fully Implemented</td></tr>
+        <tr><td><strong>US05</strong></td><td>Admin Room Type Mgmt</td><td>Property Service</td><td class="scope-impl">Fully Implemented</td></tr>
+        <tr><td><strong>US06</strong></td><td>Physical Room &amp; Housekeeping</td><td>Property Service</td><td class="scope-impl">Fully Implemented</td></tr>
+        <tr><td><strong>US07</strong></td><td>Browse &amp; Search Hotels</td><td>Property Service</td><td class="scope-impl">Fully Implemented</td></tr>
+        <tr><td><strong>US08</strong></td><td>Hotel Detail &amp; Availability</td><td>Property + Reservation Service</td><td class="scope-impl">Fully Implemented</td></tr>
+        <tr><td><strong>US09</strong></td><td>Make a Reservation</td><td>Reservation Service</td><td class="scope-impl">Fully Implemented</td></tr>
+        <tr><td><strong>US10</strong></td><td>Payment Processing</td><td>Reservation Service</td><td class="scope-impl">Fully Implemented</td></tr>
+        <tr><td><strong>US11</strong></td><td>My Reservations</td><td>Reservation Service</td><td class="scope-impl">Fully Implemented</td></tr>
+        <tr><td><strong>US12</strong></td><td>Self Check-In / Check-Out</td><td>Reservation Service</td><td class="scope-impl">Fully Implemented</td></tr>
+        <tr><td><strong>US13</strong></td><td>Submit &amp; View Reviews</td><td>Review Service</td><td class="scope-impl">Fully Implemented</td></tr>
+        <tr><td><strong>US14</strong></td><td>Admin Reservation Mgmt</td><td>Reservation Service</td><td class="scope-impl">Fully Implemented</td></tr>
+        <tr><td><strong>US15</strong></td><td>Admin Dashboard &amp; Audit Trails</td><td>All Services</td><td class="scope-impl">Fully Implemented</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ── Section 5 ── -->
+<section id="s5">
+  <h2 class="sec-title">5. Data Persistence Rules</h2>
+  <p>The application shall use <strong>four separate MySQL databases</strong> — one per microservice — as the permanent storage for all business data: <code>stayease_user_db</code>, <code>stayease_property_db</code>, <code>stayease_reservation_db</code>, and <code>stayease_review_db</code>. No cross-service database joins are permitted; all cross-service data access is performed through REST API calls via WebClient.</p>
+  <ul>
+    <li>All successful Create, Update, and Delete operations shall be immediately persisted in the database.</li>
+    <li>All View and Search operations shall always retrieve the latest persisted records from the owning service's database.</li>
+    <li>No business data shall be maintained only in frontend memory; browser <code>localStorage</code> is strictly reserved for the active JWT token (clears on logout or explicit removal).</li>
+    <li>Data shall remain available after browser closure, frontend restart, backend restart, or system reboot. <code>ddl-auto: update</code> ensures schema is kept in sync without data loss on restart; SQL scripts are one-time setup and must not be re-run on an existing database.</li>
+    <li>The database shall always be considered the single source of truth for all business operations.</li>
+    <li>Audit event tables (<code>user_audit_events</code>, <code>property_audit_events</code>, <code>reservation_audit_events</code>, <code>review_audit_events</code>) are append-only; no delete or update operations are permitted on audit records.</li>
+  </ul>
+</section>
+
+<!-- ── Section 6 ── -->
+<section id="s6">
+  <h2 class="sec-title">6. Identifier Generation Rules</h2>
+  <p>
+    StayEase uses standard auto-incrementing numeric IDs for most entities. Reservations additionally carry a human-readable <strong>public booking reference</strong> generated by the Reservation Service to provide a friendly identifier for guests and customer service.
+  </p>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Entity</th>
+          <th>Format / Data Type</th>
+          <th>Example</th>
+          <th>Generation Rule</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Users</strong></td><td>Numeric Integer</td><td><code>1, 2, 3</code></td><td>Standard Database Auto-Increment ID.</td></tr>
+        <tr><td><strong>Hotels</strong></td><td>Numeric Integer</td><td><code>1, 2, 3</code></td><td>Standard Database Auto-Increment ID.</td></tr>
+        <tr><td><strong>Room Types</strong></td><td>Numeric Integer</td><td><code>1, 2, 3</code></td><td>Standard Database Auto-Increment ID.</td></tr>
+        <tr><td><strong>Physical Rooms</strong></td><td>Numeric Integer</td><td><code>1, 2, 3</code></td><td>Standard Database Auto-Increment ID.</td></tr>
+        <tr><td><strong>Reservations</strong></td><td>Numeric Integer (internal) + String (public)</td><td><code>SE-2026-9826</code></td><td>Internal: Auto-Increment. Public reference: <code>SE-{year}-{4-digit-random}</code> generated by Reservation Service at booking time.</td></tr>
+        <tr><td><strong>Payment Transactions</strong></td><td>Numeric Integer</td><td><code>1, 2, 3</code></td><td>Standard Database Auto-Increment ID.</td></tr>
+        <tr><td><strong>Reviews</strong></td><td>Numeric Integer</td><td><code>1, 2, 3</code></td><td>Standard Database Auto-Increment ID.</td></tr>
+        <tr><td><strong>Audit Events</strong></td><td>Numeric Integer</td><td><code>1, 2, 3</code></td><td>Standard Database Auto-Increment ID; append-only.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ── Section 7 ── -->
+<section id="s7">
+  <h2 class="sec-title">7. Frontend Components</h2>
+
+  <div class="module-block">
+    <h4>Authentication Module</h4>
+    <p>Manages user onboarding, credential verification, and secure session state.</p>
+    <p><strong>Features:</strong></p>
+    <ul>
+      <li>Customer registration with immediate input validation</li>
+      <li>Login interface with role-based routing (customers to hotel search, administrators to dashboard)</li>
+      <li>Role-based client guards protecting restricted customer and administrative pages</li>
+      <li>Stateless token-based authorization attached automatically to service requests</li>
+      <li>Secure logout clearing client credentials and active session state</li>
+    </ul>
+  </div>
+
+  <div class="module-block">
+    <h4>Hotel &amp; Property Discovery Module</h4>
+    <p>Enables browsing, searching, and inspecting hotel accommodations and amenities.</p>
+    <p><strong>Features:</strong></p>
+    <ul>
+      <li>MakeMyTrip-style horizontal search bar with destination shortcuts, date pickers, and party size selectors</li>
+      <li>Strict search validations with prominent inline warning spans for invalid inputs</li>
+      <li>Automated room allocation calculation matching standard occupancy requirements</li>
+      <li>Hotel search results with filtering by star rating and price range, supported by pagination</li>
+      <li>Comprehensive hotel detail view displaying property amenities, photo galleries, and verified guest ratings</li>
+      <li>Real-time room availability cards featuring distinct visual indicators for normal, low, and sold-out inventory</li>
+    </ul>
+  </div>
+
+  <div class="module-block">
+    <h4>Reservation &amp; Booking Module</h4>
+    <p>Handles the end-to-end reservation lifecycle from date selection to departure.</p>
+    <p><strong>Features:</strong></p>
+    <ul>
+      <li>Streamlined multi-step booking flow with transparent price breakdown including lodging and taxes</li>
+      <li>Choice of payment policies: online prepaid with ten-minute inventory hold or pay upon arrival at property</li>
+      <li>Simulated checkout supporting UPI, Credit and Debit Cards, and Net Banking with realistic input validation</li>
+      <li>Customer reservations dashboard displaying upcoming, active, and past stays with live status indicators</li>
+      <li>Self-service check-in and check-out workflows updating room housekeeping readiness in real time</li>
+      <li>Single-feedback review submission unlocked exclusively upon checkout completion</li>
+      <li>Instant tax invoice generation and download</li>
+    </ul>
+  </div>
+
+  <div class="module-block">
+    <h4>Guest Profile Module</h4>
+    <p>Provides account oversight and profile management for authenticated customers.</p>
+    <p><strong>Features:</strong></p>
+    <ul>
+      <li>View personal account details including contact information and address</li>
+      <li>Update name, phone number, and mailing address</li>
+      <li>Secure email address updates backed by password verification and session refresh</li>
+    </ul>
+  </div>
+
+  <div class="module-block">
+    <h4>Admin Operations Portal</h4>
+    <p>Centralized operations center providing complete administrative control over the platform.</p>
+    <p><strong>Features:</strong></p>
+    <ul>
+      <li>Live operational dashboard tracking occupancy rates, today's arrivals and departures, revenue, and booking status distribution</li>
+      <li>Hotel property management supporting property creation, updates, photo uploads, amenities, and catalog visibility toggling</li>
+      <li>Room type configuration with base rates and seasonal date-specific rate overrides</li>
+      <li>Physical room and housekeeping tracking supporting cleanliness updates and maintenance flags</li>
+      <li>Platform-wide reservation oversight with administrative check-in, check-out, cancellation, and no-show processing</li>
+      <li>Review moderation allowing administrators to inspect reviews and remove inappropriate content with documented reasons</li>
+      <li>System-wide audit trail viewer consolidating operational logs across all services</li>
+    </ul>
+  </div>
+
+  <div class="module-block">
+    <h4>Navigation &amp; Shared Components</h4>
+    <p>Consistent visual chrome and reusable UI components supporting standard interactions.</p>
+    <p><strong>Features:</strong></p>
+    <ul>
+      <li>Responsive navigation bar with adaptive guest and administrative menu options</li>
+      <li>Platform footer with branding and navigation links</li>
+      <li>Reusable loading spinners, empty-state placeholders, and error notification banners</li>
+    </ul>
+  </div>
+
+</section>
+
+<!-- ── Section 8 ── -->
+<section id="s8">
+  <h2 class="sec-title">8. Backend Components</h2>
+
+  <div class="service-block">
+    <h3>API Gateway (Port: 8080)</h3>
+    <p><strong>Responsibilities</strong></p>
+    <ul>
+      <li>Provides a single secure entry point routing all frontend traffic to respective microservices</li>
+      <li>Assigns and propagates correlation tracking identifiers across all request and response cycles</li>
+      <li>Forwards client authorization tokens downstream for service-level verification</li>
+      <li>Enforces Cross-Origin Resource Sharing (CORS) policies for authorized web clients</li>
+    </ul>
+  </div>
+
+  <div class="service-block">
+    <h3>User Service (Port: 8081)</h3>
+    <p><strong>Responsibilities</strong></p>
+    <ul>
+      <li>Manages customer registration and secure password encryption</li>
+      <li>Handles user authentication, token issuance, and session version tracking</li>
+      <li>Maintains customer profile details and secure email updates</li>
+      <li>Provides administrative user password reset and bootstrap administrator provisioning</li>
+      <li>Maintains an immutable security and authentication audit log</li>
+    </ul>
+  </div>
+
+  <div class="service-block">
+    <h3>Property Service (Port: 8082)</h3>
+    <p><strong>Responsibilities</strong></p>
+    <ul>
+      <li>Manages hotel properties, amenities, descriptions, and catalog publication status</li>
+      <li>Defines room types, standard base rates, and seasonal date-specific pricing overrides</li>
+      <li>Tracks physical rooms, room numbers, cleanliness status, and operational readiness</li>
+      <li>Calculates stay pricing dynamically across requested date ranges based on active overrides</li>
+      <li>Maintains cached hotel ratings and review counts updated upon review approval</li>
+      <li>Maintains an immutable property management audit log</li>
+    </ul>
+  </div>
+
+  <div class="service-block">
+    <h3>Reservation Service (Port: 8083)</h3>
+    <p><strong>Responsibilities</strong></p>
+    <ul>
+      <li>Executes reservation creation, guest check-in, check-out, cancellations, and no-shows</li>
+      <li>Maintains inventory ledgers ensuring room capacity is never oversold across overlapping dates</li>
+      <li>Manages temporary ten-minute inventory holds for prepaid bookings with automated expiry cleanup</li>
+      <li>Performs simulated payment processing across card, UPI, and net banking methods</li>
+      <li>Automatically assigns operational physical rooms upon booking confirmation</li>
+      <li>Generates itemized tax invoices with subtotal, taxes, and grand total</li>
+      <li>Aggregates live operational dashboard metrics including occupancy, arrivals, and revenue</li>
+      <li>Maintains an immutable reservation and payment audit log</li>
+    </ul>
+  </div>
+
+  <div class="service-block">
+    <h3>Review Service (Port: 8084)</h3>
+    <p><strong>Responsibilities</strong></p>
+    <ul>
+      <li>Validates review eligibility, requiring completed checkout before submission</li>
+      <li>Strictly enforces single-review policy per booking across database and service layers</li>
+      <li>Publishes verified customer ratings and feedback, updating property averages asynchronously</li>
+      <li>Supports administrative moderation to remove inappropriate reviews with documented justifications</li>
+      <li>Maintains an immutable review moderation audit log</li>
+    </ul>
+  </div>
+
+</section>
+
+<!-- ── Section 9 ── -->
+<section id="s9">
+  <h2 class="sec-title">9. Non-Functional Requirements</h2>
+  <ul>
+    <li><strong>Performance:</strong> The application should be fast and responsive, with quick load times and minimal lag. All search and availability queries must return results within acceptable time limits even with 18+ hotels and multiple room types.</li>
+    <li><strong>Usability:</strong> The application should be easy to use and intuitive, with a clear and consistent UI. Guests should be able to complete a booking within 3 interactions from the hotel search results page.</li>
+    <li><strong>UI/UX Design:</strong> Built with Bootstrap 5.3.3 and Bootstrap Icons. Prioritize responsiveness, clarity, and visual consistency across the guest portal and admin portal. Appropriate loading spinners, empty states, and error states must be used throughout.</li>
+    <li><strong>Security:</strong> All passwords BCrypt-hashed. JWT stateless authentication enforced on all protected endpoints. Role-based access control strictly enforced — <code>ROLE_USER</code> cannot access admin endpoints and vice versa. Sensitive data (passwords, tokens) must never appear in logs or audit records.</li>
+    <li><strong>Availability / Inventory Integrity:</strong> The 10-minute PREPAID inventory hold mechanism must prevent overbooking; the <code>HoldAndExpiryScheduler</code> must reliably expire stale holds even on backend restarts.</li>
+    <li><strong>Fault Tolerance:</strong> Resilience4j circuit breakers on all WebClient inter-service calls; appropriate fallback responses must be returned when an upstream service is unavailable, without crashing the calling service.</li>
+    <li><strong>Auditability:</strong> Every significant state change in the system must produce an immutable audit event with actor, action, before/after state, and timestamp — across all four services.</li>
+  </ul>
+</section>
+
+<!-- ── Section 10 ── -->
+<section id="s10">
+  <h2 class="sec-title">10. Implementation Guidelines</h2>
+
+  <h3 class="sub-title">10.1 General Coding Practices</h3>
+  <ul>
+    <li>Use Lombok to generate boilerplate code (e.g., <code>@Data</code>, <code>@Builder</code>, <code>@Slf4j</code>, <code>@RequiredArgsConstructor</code>) for all model and service classes. Prefer constructor injection for dependency management.</li>
+    <li>Implement logic using Java Streams and Lambdas.</li>
+    <li>Organize code into logical layers: <code>controller</code>, <code>service</code>, <code>repository</code>, <code>dto</code>, <code>entity</code>, <code>config</code>, <code>security</code>, <code>client</code>, <code>audit</code>.</li>
+    <li>Use meaningful package names reflecting the domain (e.g., <code>com.stayease.property.service</code>).</li>
+    <li>Use MapStruct for DTO ↔ Entity mapping where applicable; manual mapping may be used in service layers for complex transformations.</li>
+    <li>Employ Spring Dependency Injection for all component management.</li>
+  </ul>
+
+  <h3 class="sub-title">10.2 Error Handling</h3>
+  <ul>
+    <li>Use a centralized <code>@RestControllerAdvice</code> (<code>GlobalExceptionHandler</code>) in each service to intercept, format, and log all exceptions.</li>
+    <li>Implement custom exceptions (e.g., <code>HotelNotFoundException</code>, <code>ReservationConflictException</code>, <code>DuplicateReviewException</code>) with descriptive messages.</li>
+    <li>Return meaningful error responses with appropriate HTTP status codes (400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 409 Conflict, 500 Internal Server Error).</li>
+    <li>Frontend validation errors shall be displayed inline using Bootstrap <code>text-danger</code> spans below the relevant form fields.</li>
+  </ul>
+
+  <h3 class="sub-title">10.3 DTOs and Mapping</h3>
+  <ul>
+    <li>Data Transfer Objects (DTOs) must be used for all API request and response payloads.</li>
+    <li>Database Entities shall <strong>never</strong> be exposed directly through REST APIs.</li>
+    <li>Separate request DTOs (with Bean Validation annotations) from response DTOs (clean, minimal fields).</li>
+    <li>Sensitive fields (e.g., <code>passwordHash</code>, <code>tokenVersion</code>) must never appear in response DTOs.</li>
+  </ul>
+
+  <h3 class="sub-title">10.4 Database Interaction</h3>
+  <ul>
+    <li>Spring Data JPA Repositories must be used for all database operations.</li>
+    <li>Configure <code>spring.jpa.hibernate.ddl-auto=update</code> for rapid development; SQL scripts are one-time DDL setup.</li>
+    <li>Use <code>@Transactional</code> on all service methods that perform multiple database writes to ensure atomicity.</li>
+    <li>Monetary values (nightly rates, totals) shall use <code>BigDecimal</code> with <code>HALF_UP</code> rounding to 2 decimal places.</li>
+  </ul>
+
+  <h3 class="sub-title">10.5 API Design</h3>
+  <ul>
+    <li>All APIs shall be mapped with an appropriate base URI representing the resource (e.g., <code>/api/properties/hotels</code>, <code>/api/reservations</code>, <code>/api/reviews</code>).</li>
+    <li>Strictly isolate server port numbers: Gateway 8080, User Service 8081, Property Service 8082, Reservation Service 8083, Review Service 8084.</li>
+    <li>Use appropriate HTTP methods (GET, POST, PUT, PATCH, DELETE) with correct Spring-resolved status codes.</li>
+    <li>Admin endpoints shall be prefixed with <code>/admin/</code> within each service and secured with <code>ROLE_ADMIN</code>.</li>
+    <li>Internal inter-service endpoints shall be prefixed with <code>/internal/</code> and secured appropriately.</li>
+  </ul>
+
+  <h3 class="sub-title">10.6 Microservice Communication</h3>
+  <ul>
+    <li>Register all microservices with Spring Cloud Consul for dynamic service discovery and health monitoring.</li>
+    <li>Route all frontend and external client requests exclusively through the Spring Cloud Gateway.</li>
+    <li>Use <code>WebClient</code> (from Spring WebFlux) for all inter-service HTTP communication with a <code>@LoadBalanced WebClient.Builder</code> bean using Consul service names (e.g., <code>http://stayease-user-service</code>). Do <strong>not</strong> use the deprecated <code>RestTemplate</code>.</li>
+    <li>Implement Resilience4j Circuit Breaker for all inter-service WebClient calls:
+      <ul>
+        <li><code>slidingWindowSize</code>: 10</li>
+        <li><code>failureRateThreshold</code>: 50%</li>
+        <li><code>waitDurationInOpenState</code>: 10s (configured for rapid recovery in high-throughput hotel bookings)</li>
+        <li><code>permittedNumberOfCallsInHalfOpenState</code>: 3</li>
+        <li>Define appropriate <code>@CircuitBreaker</code> fallback methods for graceful degradation.</li>
+      </ul>
+    </li>
+    <li>All services must use <code>application.yml</code> for all configuration (not <code>application.properties</code>).</li>
+  </ul>
+
+  <h3 class="sub-title">10.7 Validation</h3>
+  <ul>
+    <li>Bean Validation (<code>@Valid</code>, <code>@NotBlank</code>, <code>@NotNull</code>, <code>@Min</code>, <code>@Max</code>, <code>@Email</code>, <code>@Size</code>) must be used for all request DTOs.</li>
+    <li>Custom validators should be implemented for complex cross-field validations (e.g., check-out must be after check-in; at least 1 adult required).</li>
+    <li>All request parameters must be validated; return standard Bean Validation error messages wrapped in the <code>GlobalExceptionHandler</code> response format.</li>
+    <li>Frontend Angular forms must use Reactive Forms with synchronous validators and display <code>text-danger</code> error spans for all invalid fields.</li>
+  </ul>
+
+  <h3 class="sub-title">10.8 Testing</h3>
+  <ul>
+    <li>Write unit test cases for critical service methods using <strong>JUnit 5</strong> and <strong>Mockito</strong>.</li>
+    <li>Achieve a minimum of 80% code coverage on service layer classes.</li>
+    <li>Test all REST APIs using Postman collections or Swagger/OpenAPI (<code>springdoc-openapi</code>).</li>
+    <li>Bootstrap runner tests (<code>AdminBootstrapRunnerTest</code>) must verify idempotency — running the runner twice must not create a duplicate admin.</li>
+  </ul>
+</section>
+
+<!-- ── Section 11 ── -->
+<section id="s11">
+  <h2 class="sec-title">11. Code Quality</h2>
+  <p>
+    To ensure adherence to coding standards, the project should be analyzed using SonarQube. The following minimum acceptable values must be met:
+  </p>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>SonarQube Metric</th>
+          <th>Minimum Acceptable Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Security</td><td class="sonar-a">A</td></tr>
+        <tr><td>Reliability</td><td class="sonar-a">A</td></tr>
+        <tr><td>Issues</td><td>≤ 5</td></tr>
+        <tr><td>Coverage</td><td>≥ 80%</td></tr>
+        <tr><td>Duplications</td><td>≤ 3%</td></tr>
+        <tr><td>Security Hotspots</td><td class="sonar-a">A</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ── Section 12 ── -->
+<section id="s12">
+  <h2 class="sec-title">12. Final Deliverables</h2>
+  <ul>
+    <li>Application archive with complete source code (5 Spring Boot microservices + Angular 16 frontend)</li>
+    <li>Database DDL scripts for all 4 MySQL databases (<code>user_db.sql</code>, <code>property_db.sql</code>, <code>reservation_db.sql</code>, <code>review_db.sql</code>)</li>
+    <li>Running microservices implementation with all 15 user stories fully implemented</li>
+    <li>README.md with setup instructions, architecture diagram, tech stack, and seed data reference</li>
+    <li>SRS document (this file)</li>
+  </ul>
+  <p style="text-align:center; color: var(--primary); font-weight:700; margin-top:32px; font-size:1.05rem;">
+    StayEase — Build clean, maintainable, and well-tested code.
+  </p>
+</section>
+
+</main>
+</div>
+</body>
+</html>
+

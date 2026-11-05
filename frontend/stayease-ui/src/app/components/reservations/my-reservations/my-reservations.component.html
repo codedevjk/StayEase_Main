@@ -1,0 +1,219 @@
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="font-serif fw-bold text-dark mb-1">My Hotel Reservations</h2>
+      <p class="text-muted small mb-0">View booking status, access invoices, perform self check-in, or manage stays</p>
+    </div>
+    <a routerLink="/hotels" class="btn btn-primary btn-sm px-3">
+      <i class="bi bi-plus-lg me-1"></i> Book New Stay
+    </a>
+  </div>
+
+  <!-- Action Alerts -->
+  <div *ngIf="actionMessage" class="alert alert-success d-flex align-items-center small mb-3 alert-dismissible fade show">
+    <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+    <span>{{ actionMessage }}</span>
+    <button type="button" class="btn-close" (click)="actionMessage = null"></button>
+  </div>
+  <div *ngIf="errorMessage" class="alert alert-danger d-flex align-items-center small mb-3 alert-dismissible fade show">
+    <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+    <span>{{ errorMessage }}</span>
+    <button type="button" class="btn-close" (click)="errorMessage = null"></button>
+  </div>
+
+  <app-loading-spinner *ngIf="loading" message="Loading your reservation history..."></app-loading-spinner>
+
+  <div *ngIf="!loading && reservations.length === 0" class="card shadow-sm border p-5 text-center">
+    <app-empty-state
+      icon="bi bi-calendar2-x"
+      title="No Reservations Found"
+      message="You have no upcoming or past reservations on record. Explore our hotels to plan your next vacation!"
+      actionText="Browse Luxury Stays"
+      actionRoute="/hotels">
+    </app-empty-state>
+  </div>
+
+  <!-- Reservation Cards List -->
+  <div *ngIf="!loading && reservations.length > 0" class="row g-3">
+    <div *ngFor="let r of reservations" class="col-12">
+      <div class="card shadow-sm border border-start border-4 p-4"
+        [class.border-success]="r.status === 'CONFIRMED' || r.status === 'CHECKED_IN'"
+        [class.border-warning]="r.status === 'PENDING_PAYMENT'"
+        [class.border-danger]="r.status === 'CANCELLED' || r.status === 'NO_SHOW'"
+        [class.border-secondary]="r.status === 'CHECKED_OUT'">
+        
+        <div class="row align-items-center g-3">
+          <!-- Ref & Hotel -->
+          <div class="col-lg-3 col-md-6">
+            <span class="text-muted small d-block"><i class="bi bi-hash text-muted me-1"></i> Booking Reference</span>
+            <span class="fw-bold font-monospace text-primary fs-6">{{ r.referenceNumber }}</span>
+            <div class="fw-bold text-dark mt-1">{{ r.hotelName || 'Luxury Stay' }}</div>
+            <div class="small text-muted">{{ r.roomTypeName || 'Room Type ' + r.roomTypeId }}</div>
+          </div>
+
+          <!-- Dates & Stay info -->
+          <div class="col-lg-3 col-md-6">
+            <span class="text-muted small d-block"><i class="bi bi-calendar-range text-muted me-1"></i> Stay Window</span>
+            <span class="fw-semibold text-dark">{{ r.checkInDate }} <i class="bi bi-arrow-right text-muted small"></i> {{ r.checkOutDate }}</span>
+            <div class="small text-muted mt-1">
+              {{ r.nights }} Night(s) • {{ r.guestCount }} Guest(s)
+            </div>
+            <div *ngIf="r.assignedRoomNumber" class="small text-success fw-bold">
+              <i class="bi bi-door-open-fill me-1"></i> Assigned Room: {{ r.assignedRoomNumber }}
+            </div>
+          </div>
+
+          <!-- Financials & Status -->
+          <div class="col-lg-2 col-md-4">
+            <span class="text-muted small d-block"><i class="bi bi-credit-card text-muted me-1"></i> Total & Payment</span>
+            <span class="fw-bold text-dark fs-6">₹{{ r.totalAmount | number:'1.2-2' }}</span>
+            <div class="mt-1">
+              <span class="badge"
+                [class.bg-success]="r.status === 'CONFIRMED'"
+                [class.bg-warning]="r.status === 'PENDING_PAYMENT'"
+                [class.text-dark]="r.status === 'PENDING_PAYMENT'"
+                [class.bg-info]="r.status === 'CHECKED_IN'"
+                [class.bg-secondary]="r.status === 'CHECKED_OUT'"
+                [class.bg-danger]="r.status === 'CANCELLED' || r.status === 'NO_SHOW'">
+                {{ r.status }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="col-lg-4 col-md-8 text-lg-end d-flex flex-wrap gap-2 justify-content-lg-end">
+            <!-- View Details / Invoice -->
+            <button (click)="viewDetails(r.id)" class="btn btn-outline-primary btn-sm">
+              <i class="bi bi-receipt me-1"></i> Invoice
+            </button>
+
+            <!-- Self Check-in -->
+            <button *ngIf="r.status === 'CONFIRMED'" (click)="onCheckIn(r)" class="btn btn-success btn-sm">
+              <i class="bi bi-box-arrow-in-right me-1"></i> Check-in
+            </button>
+
+            <!-- Self Check-out -->
+            <button *ngIf="r.status === 'CHECKED_IN'" (click)="onCheckOut(r)" class="btn btn-warning btn-sm text-dark fw-bold">
+              <i class="bi bi-box-arrow-left me-1"></i> Check-out
+            </button>
+
+            <!-- Write Review (Only once per booking) -->
+            <button *ngIf="canReview(r)" (click)="openReviewModal(r)" class="btn btn-warning btn-sm text-dark fw-bold">
+              <i class="bi bi-star-fill me-1"></i> Review
+            </button>
+
+            <!-- Already Reviewed Indicator -->
+            <span *ngIf="isReviewed(r)" class="badge bg-light text-success border border-success d-inline-flex align-items-center px-2 py-1" title="Feedback has already been submitted for this booking">
+              <i class="bi bi-check-circle-fill me-1 text-success"></i> Reviewed
+            </span>
+
+            <!-- Cancel Button -->
+            <button *ngIf="r.status === 'CONFIRMED' || r.status === 'PENDING_PAYMENT'" (click)="openCancelModal(r)" class="btn btn-outline-danger btn-sm">
+              <i class="bi bi-x-circle me-1"></i> Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  <div *ngIf="!loading && totalPages > 1" class="d-flex justify-content-center align-items-center gap-2 mt-4">
+    <button [disabled]="currentPage === 0" (click)="loadReservations(currentPage - 1)" class="btn btn-outline-secondary btn-sm px-3">
+      Previous
+    </button>
+    <span class="text-muted small px-2">Page {{ currentPage + 1 }} of {{ totalPages }}</span>
+    <button [disabled]="currentPage >= totalPages - 1" (click)="loadReservations(currentPage + 1)" class="btn btn-outline-secondary btn-sm px-3">
+      Next
+    </button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODAL: CANCELLATION DIALOG
+     ══════════════════════════════════════════════════════════════ -->
+<div *ngIf="selectedReservationForCancel" class="modal d-block bg-dark bg-opacity-50" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content shadow-lg border-0 rounded-3">
+      <div class="modal-header border-bottom">
+        <h5 class="modal-title font-serif fw-bold text-danger">
+          <i class="bi bi-exclamation-triangle-fill me-2"></i> Cancel Reservation
+        </h5>
+        <button type="button" class="btn-close" (click)="selectedReservationForCancel = null"></button>
+      </div>
+      <div class="modal-body p-4">
+        <p class="small text-muted mb-3">
+          You are cancelling reservation <strong>{{ selectedReservationForCancel.referenceNumber }}</strong>.
+          Cancellations $\ge 24$ hours before 14:00 check-in receive a 100% full refund. Late cancellations incur a 1-night penalty + tax.
+        </p>
+        <div class="mb-3">
+          <label class="form-label small fw-bold text-muted">Reason for Cancellation</label>
+          <select [(ngModel)]="cancellationReason" class="form-select form-select-sm">
+            <option value="Change of travel plans">Change of travel plans</option>
+            <option value="Medical emergency">Medical emergency</option>
+            <option value="Flight cancellation / delay">Flight cancellation / delay</option>
+            <option value="Found alternative accommodation">Found alternative accommodation</option>
+            <option value="Personal reasons">Personal reasons</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer border-top">
+        <button type="button" class="btn btn-secondary btn-sm" (click)="selectedReservationForCancel = null">Keep Reservation</button>
+        <button type="button" [disabled]="cancelling" (click)="submitCancel()" class="btn btn-danger btn-sm px-3">
+          <span *ngIf="cancelling" class="spinner-border spinner-border-sm me-1"></span>
+          Confirm Cancellation
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODAL: WRITE VERIFIED GUEST REVIEW
+     ══════════════════════════════════════════════════════════════ -->
+<div *ngIf="selectedReservationForReview" class="modal d-block bg-dark bg-opacity-50" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content shadow-lg border-0 rounded-3">
+      <div class="modal-header border-bottom">
+        <h5 class="modal-title font-serif fw-bold text-dark">
+          <i class="bi bi-star-fill text-warning me-2"></i> Write Verified Review
+        </h5>
+        <button type="button" class="btn-close" (click)="selectedReservationForReview = null"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div *ngIf="reviewError" class="alert alert-danger small d-flex align-items-center mb-3">
+          <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+          <span>{{ reviewError }}</span>
+        </div>
+
+        <p class="small text-muted mb-3">
+          Share your experience for your stay at <strong>{{ selectedReservationForReview.hotelName || 'this property' }}</strong>.
+        </p>
+
+        <!-- Star Rating Selector -->
+        <div class="mb-3">
+          <label class="form-label small fw-bold text-muted d-block">Overall Rating (1 to 5 Stars)</label>
+          <div class="d-flex gap-2">
+            <button *ngFor="let s of [1,2,3,4,5]" type="button" (click)="reviewRating = s" class="btn btn-sm" [class.btn-warning]="reviewRating >= s" [class.btn-outline-secondary]="reviewRating < s">
+              <i class="bi bi-star-fill"></i> {{ s }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Comment Input -->
+        <div class="mb-3">
+          <label class="form-label small fw-bold text-muted">Review Comment (10–1000 characters)</label>
+          <textarea [(ngModel)]="reviewComment" class="form-control" rows="4" placeholder="How was the room, cleanliness, staff, and overall experience?"></textarea>
+          <div class="form-text small text-end">{{ reviewComment.length }} / 1000</div>
+        </div>
+      </div>
+      <div class="modal-footer border-top">
+        <button type="button" class="btn btn-secondary btn-sm" (click)="selectedReservationForReview = null">Cancel</button>
+        <button type="button" [disabled]="submittingReview || reviewComment.length < 10" (click)="submitReview()" class="btn btn-primary btn-sm px-3">
+          <span *ngIf="submittingReview" class="spinner-border spinner-border-sm me-1"></span>
+          Publish Review
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

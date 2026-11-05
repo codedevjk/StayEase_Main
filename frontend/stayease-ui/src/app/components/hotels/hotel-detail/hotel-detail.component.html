@@ -1,0 +1,284 @@
+<div class="container py-4" *ngIf="loadingHotel">
+  <app-loading-spinner message="Loading hotel details..."></app-loading-spinner>
+</div>
+
+<div class="container py-4" *ngIf="hotelError">
+  <app-error-state [message]="hotelError" (onRetry)="loadHotelDetails()"></app-error-state>
+</div>
+
+<div class="container py-4" *ngIf="hotel">
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb small">
+      <li class="breadcrumb-item"><a routerLink="/" class="text-decoration-none">Home</a></li>
+      <li class="breadcrumb-item"><a routerLink="/hotels" class="text-decoration-none">Hotels</a></li>
+      <li class="breadcrumb-item active" aria-current="page">{{ hotel.name }}</li>
+    </ol>
+  </nav>
+
+  <!-- Hotel Header -->
+  <div class="row g-4 align-items-start mb-4">
+    <div class="col-lg-8">
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <span class="badge bg-warning text-dark fw-bold px-2 py-1">
+          <i class="bi bi-star-fill me-1"></i> {{ hotel.starRating }} Star Luxury
+        </span>
+        <span *ngIf="reviewSummary && reviewSummary.totalReviews > 0" class="badge bg-success px-2 py-1">
+          <i class="bi bi-hand-thumbs-up-fill me-1"></i> {{ reviewSummary.averageRating | number:'1.1-1' }} / 5.0 ({{ reviewSummary.totalReviews }} reviews)
+        </span>
+      </div>
+      <h1 class="display-6 font-serif fw-bold text-dark mb-2">{{ hotel.name }}</h1>
+      <p class="text-muted small mb-0">
+        <i class="bi bi-geo-alt-fill text-danger me-1"></i> {{ hotelLocation }}
+      </p>
+    </div>
+    <div class="col-lg-4 text-lg-end">
+      <div class="text-muted small">Concierge Helpline:</div>
+      <div class="fw-bold fs-5 text-dark"><i class="bi bi-telephone-fill text-primary me-1"></i> {{ hotelPhone }}</div>
+    </div>
+  </div>
+
+  <!-- Hero Photo Banner -->
+  <div class="rounded-4 overflow-hidden mb-5 position-relative shadow-sm" style="height: 380px;">
+    <img [src]="getHotelImage(hotel)" [alt]="hotel.name" class="w-100 h-100" style="object-fit: cover;" loading="lazy">
+    <div class="position-absolute top-0 start-0 w-100 h-100" style="background: linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(15, 23, 42, 0.75) 100%);"></div>
+    <div class="position-absolute bottom-0 start-0 m-4 text-white">
+      <h3 class="font-serif fw-bold mb-1">{{ hotel.name }}</h3>
+      <p class="small text-light opacity-90 mb-0">Experience world-class hospitality in {{ hotel.destination || hotelLocation }}</p>
+    </div>
+  </div>
+
+  <!-- Overview & Amenities -->
+  <div class="row g-4 mb-5">
+    <div class="col-lg-8">
+      <div class="card shadow-sm border p-4 mb-4">
+        <h4 class="font-serif fw-bold text-dark mb-3">About The Property</h4>
+        <p class="text-muted leading-relaxed">{{ hotel.description }}</p>
+
+        <h5 class="fw-bold text-dark mt-4 mb-3"><i class="bi bi-patch-check-fill text-primary me-2"></i> Featured Amenities</h5>
+        <div class="row g-3">
+          <div *ngFor="let am of hotel.amenities" class="col-sm-6 col-md-4">
+            <div class="d-flex align-items-center p-2 rounded bg-light border small">
+              <i class="bi me-2 text-primary fs-6" [class]="getAmenityIcon(am.name || am)"></i>
+              <span class="fw-semibold text-dark">{{ am.name || am }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Booking Check Box (Col-lg-4) -->
+    <div class="col-lg-4">
+      <div class="card shadow-sm border border-primary border-2 p-4 sticky-top" style="top: 85px;">
+        <h5 class="font-serif fw-bold text-dark mb-3">
+          <i class="bi bi-calendar3 text-primary me-2"></i> Check Availability
+        </h5>
+        
+        <form (ngSubmit)="checkAvailability()">
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-muted">Check-in Date</label>
+            <input type="date" [(ngModel)]="checkInDate" name="checkIn" [min]="minDate" class="form-control" (change)="checkAvailability()">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-muted">Check-out Date</label>
+            <input type="date" [(ngModel)]="checkOutDate" name="checkOut" [min]="checkInDate || minDate" class="form-control" (change)="checkAvailability()">
+            <span *ngIf="dateError" class="text-danger small mt-1 d-block fw-semibold">
+              <i class="bi bi-exclamation-circle me-1"></i> {{ dateError }}
+            </span>
+          </div>
+
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label small fw-bold text-muted mb-1">
+                <i class="bi bi-person-fill text-primary me-1"></i> Adults (11+ yrs)
+              </label>
+              <input type="number" [(ngModel)]="adults" name="adults" min="1" max="20" class="form-control" (change)="onGuestCountChange()">
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-bold text-muted mb-1">
+                <i class="bi bi-person text-secondary me-1"></i> Children (≤10 yrs)
+              </label>
+              <input type="number" [(ngModel)]="children" name="children" min="0" max="10" class="form-control" (change)="onGuestCountChange()">
+            </div>
+            <!-- Adult & Child Validation Error Span -->
+            <div class="col-12" *ngIf="guestError || adults < 1">
+              <span class="text-danger small mt-1 d-block fw-semibold">
+                <i class="bi bi-exclamation-octagon-fill me-1"></i> At least 1 adult is required to make a booking. Child-only bookings are not allowed.
+              </span>
+            </div>
+          </div>
+
+          <!-- Room Allocation Rule Guidance -->
+          <div class="card p-2 bg-light border mb-3 small">
+            <div class="d-flex align-items-center justify-content-between mb-1">
+              <span class="text-dark fw-bold">
+                <i class="bi bi-door-open-fill text-primary me-1"></i> {{ requiredRooms }} Room(s) Required
+              </span>
+              <span class="badge bg-secondary">Max 2 adults/room</span>
+            </div>
+            <div *ngIf="adults > 2" class="text-muted" style="font-size: 0.76rem;">
+              <i class="bi bi-info-circle text-primary me-1"></i> Multiple rooms will be booked (max 2 adults per room).
+            </div>
+            <div *ngIf="children > 0" class="text-success" style="font-size: 0.76rem;">
+              <i class="bi bi-check-circle-fill me-1"></i> Children (≤10 yrs) stay with adults (No extra room).
+            </div>
+          </div>
+
+          <button type="submit" [disabled]="checkingAvailability || adults < 1 || !!dateError" class="btn btn-primary w-100 py-2 fw-bold shadow-sm">
+            <span *ngIf="checkingAvailability" class="spinner-border spinner-border-sm me-2" role="status"></span>
+            <span>Update Availability</span>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Available Room Types Section -->
+  <section class="mb-5" id="roomsSection">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h3 class="font-serif fw-bold text-dark mb-0">Select Your Room</h3>
+      <span *ngIf="availabilityChecked && availableRoomCount > 0" class="badge bg-success px-3 py-2">
+        {{ availableRoomCount }} Room Type{{ availableRoomCount > 1 ? 's' : '' }} Available
+      </span>
+      <span *ngIf="availabilityChecked && availableRoomTypes.length > 0 && availableRoomCount === 0" class="badge bg-danger px-3 py-2">
+        <i class="bi bi-exclamation-triangle-fill me-1"></i> Fully Booked for Selected Dates
+      </span>
+    </div>
+
+    <app-loading-spinner *ngIf="checkingAvailability" message="Calculating nightly rates and verifying inventory..."></app-loading-spinner>
+    <app-error-state *ngIf="availabilityError" [message]="availabilityError" (onRetry)="checkAvailability()"></app-error-state>
+
+    <div *ngIf="!checkingAvailability && availabilityChecked && availableRoomTypes.length === 0" class="card shadow-sm border p-4 text-center">
+      <app-empty-state
+        icon="bi bi-calendar-x"
+        title="No Rooms Available For These Dates"
+        message="All room types at this property are fully booked for your selected check-in and check-out window. Please select alternate dates.">
+      </app-empty-state>
+    </div>
+
+    <div *ngIf="!checkingAvailability && availableRoomTypes.length > 0" class="row g-4">
+      <div *ngFor="let room of availableRoomTypes" class="col-12">
+        <div class="card shadow-sm border border-start border-4 p-4 transition-all"
+             [class.border-primary]="room.availableRooms > 0"
+             [class.border-secondary]="room.availableRooms <= 0"
+             [class.bg-light]="room.availableRooms <= 0"
+             [class.opacity-75]="room.availableRooms <= 0">
+          <div class="row align-items-center g-3">
+            <div class="col-md-5">
+              <h5 class="fw-bold font-serif mb-1" [class.text-dark]="room.availableRooms > 0" [class.text-muted]="room.availableRooms <= 0">
+                {{ room.name }}
+              </h5>
+              <div class="small text-muted mb-2">
+                <i class="bi bi-person-fill text-secondary me-1"></i> Max Capacity: <strong>{{ room.maxGuests || room.capacity || 2 }} Guests</strong>
+              </div>
+
+              <!-- Sold Out Badge -->
+              <div *ngIf="room.availableRooms <= 0" class="badge bg-secondary bg-opacity-25 text-secondary border border-secondary small mb-2 px-2 py-1">
+                <i class="bi bi-slash-circle me-1"></i> Sold Out / Unavailable
+              </div>
+              <!-- Urgent Low Inventory Badge -->
+              <div *ngIf="room.availableRooms > 0 && room.availableRooms <= 3" class="badge bg-danger bg-opacity-10 text-danger border border-danger-subtle small mb-2 px-2 py-1">
+                <i class="bi bi-fire me-1"></i> Only {{ room.availableRooms }} room(s) left!
+              </div>
+              <!-- Normal Availability Badge -->
+              <div *ngIf="room.availableRooms > 3" class="badge bg-success bg-opacity-10 text-success border border-success-subtle small mb-2 px-2 py-1">
+                <i class="bi bi-check-circle me-1"></i> {{ room.availableRooms }} rooms available
+              </div>
+            </div>
+
+            <!-- Price Breakdown -->
+            <div class="col-md-4 text-md-center">
+              <span class="text-muted small d-block">Nightly Rate</span>
+              <span class="fw-bold fs-5" [class.text-dark]="room.availableRooms > 0" [class.text-muted]="room.availableRooms <= 0">
+                ₹{{ (room.basePrice || (room.lodgingSubtotal ? room.lodgingSubtotal / nights : 3500)) | number:'1.0-0' }}
+              </span>
+              <span class="text-muted small"> / night</span>
+              <div class="small mt-1">
+                <span *ngIf="room.availableRooms > 0" class="text-muted">
+                  Total for stay: <strong class="text-primary">₹{{ (room.lodgingSubtotal || room.effectiveTotal || 7000) | number:'1.0-0' }}</strong> + 12% GST
+                </span>
+                <span *ngIf="room.availableRooms <= 0" class="text-danger fw-semibold">
+                  <i class="bi bi-calendar-x me-1"></i>Unavailable for selected dates
+                </span>
+              </div>
+            </div>
+
+            <!-- Booking Action -->
+            <div class="col-md-3 text-md-end">
+              <button *ngIf="room.availableRooms > 0" (click)="bookRoom(room)" class="btn btn-primary w-100 py-2 shadow-sm fw-bold">
+                Reserve Room <i class="bi bi-arrow-right ms-1"></i>
+              </button>
+              <button *ngIf="room.availableRooms <= 0" disabled class="btn btn-secondary w-100 py-2 shadow-none fw-bold" style="cursor: not-allowed;">
+                <i class="bi bi-slash-circle me-1"></i> Sold Out
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Verified Guest Reviews Section -->
+  <section class="mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h3 class="font-serif fw-bold text-dark mb-1">Verified Guest Reviews</h3>
+        <p class="text-muted small mb-0">Feedback submitted exclusively by guests who completed a verified checkout</p>
+      </div>
+      <div *ngIf="reviewSummary" class="text-end">
+        <span class="fs-4 fw-bold text-dark">{{ reviewSummary.averageRating | number:'1.1-1' }}</span>
+        <span class="text-muted"> / 5.0</span>
+        <div class="star-rating small">
+          <i class="bi bi-star-fill" *ngFor="let s of [1,2,3,4,5]"></i>
+        </div>
+      </div>
+    </div>
+
+    <app-loading-spinner *ngIf="loadingReviews" message="Loading guest reviews..."></app-loading-spinner>
+
+    <div *ngIf="!loadingReviews && reviews.length === 0" class="card shadow-sm border p-4 text-center">
+      <app-empty-state
+        icon="bi bi-chat-quote"
+        title="No Reviews Yet"
+        message="Be the first to review this property after completing your stay!">
+      </app-empty-state>
+    </div>
+
+    <!-- Review Items -->
+    <div *ngIf="!loadingReviews && reviews.length > 0" class="row g-3">
+      <div *ngFor="let rev of reviews" class="col-12">
+        <div class="card shadow-sm border p-3">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <div class="d-flex align-items-center gap-2">
+              <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 36px; height: 36px;">
+                {{ rev.guestName.charAt(0) }}
+              </div>
+              <div>
+                <span class="fw-bold text-dark small d-block">{{ rev.guestName }}</span>
+                <span class="text-muted" style="font-size: 0.75rem;">Verified Stay • {{ rev.createdAt | date:'mediumDate' }}</span>
+              </div>
+            </div>
+            <div class="star-rating small">
+              <span class="badge bg-warning text-dark fw-bold px-2 py-1">
+                <i class="bi bi-star-fill text-dark me-1"></i> {{ rev.rating }} / 5
+              </span>
+            </div>
+          </div>
+          <p class="text-dark small mb-0">{{ rev.comment }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Review Pagination -->
+    <div *ngIf="!loadingReviews && totalReviewPages > 1" class="d-flex justify-content-center align-items-center gap-2 mt-4">
+      <button [disabled]="reviewPage === 0" (click)="loadReviews(reviewPage - 1)" class="btn btn-outline-secondary btn-sm px-3">
+        Previous
+      </button>
+      <span class="text-muted small px-2">Page {{ reviewPage + 1 }} of {{ totalReviewPages }}</span>
+      <button [disabled]="reviewPage >= totalReviewPages - 1" (click)="loadReviews(reviewPage + 1)" class="btn btn-outline-secondary btn-sm px-3">
+        Next
+      </button>
+    </div>
+  </section>
+</div>

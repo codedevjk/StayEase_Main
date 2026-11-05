@@ -1,0 +1,132 @@
+<div class="card shadow-sm border p-4 mb-4">
+  <div class="d-flex justify-content-between align-items-center">
+    <div>
+      <h3 class="font-serif fw-bold text-dark mb-1">Operational Metrics Dashboard</h3>
+      <p class="text-muted small mb-0">System-wide occupancy, financial reconciliation, and live stay states</p>
+    </div>
+    <button (click)="loadMetrics()" [disabled]="loading" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+    </button>
+  </div>
+</div>
+
+<app-loading-spinner *ngIf="loading" message="Aggregating operational analytics..."></app-loading-spinner>
+<app-error-state *ngIf="errorMessage" [message]="errorMessage" (onRetry)="loadMetrics()"></app-error-state>
+
+<!-- Partial Data Degradation Warning Banner -->
+<div *ngIf="metrics?.partialDataWarning" class="alert alert-warning d-flex align-items-center mb-4 p-3 rounded-3 shadow-sm">
+  <i class="bi bi-exclamation-triangle-fill fs-4 me-3 text-warning"></i>
+  <div>
+    <h6 class="alert-heading fw-bold mb-1">Downstream Service Degradation Detected</h6>
+    <div class="small">{{ metrics?.partialDataWarning }}</div>
+  </div>
+</div>
+
+<div *ngIf="!loading && metrics">
+  <!-- Key Financial & Occupancy KPIs -->
+  <div class="row g-3 mb-4">
+    <!-- Occupancy -->
+    <div class="col-sm-6 col-xl-3">
+      <div class="card shadow-sm border border-start border-4 border-primary p-3">
+        <span class="text-muted small fw-bold text-uppercase">System Occupancy</span>
+        <div class="h3 fw-bold text-dark mt-2 mb-1">{{ (metrics.currentOccupancyRate || 0) | number:'1.1-1' }}%</div>
+        <div class="small text-muted">Across all operational room types</div>
+      </div>
+    </div>
+
+    <!-- Revenue Collected -->
+    <div class="col-sm-6 col-xl-3">
+      <div class="card shadow-sm border border-start border-4 border-success p-3">
+        <span class="text-muted small fw-bold text-uppercase">Revenue Collected</span>
+        <div class="h3 fw-bold text-success mt-2 mb-1">₹{{ (metrics.totalRevenueCollected || 0) | number:'1.2-2' }}</div>
+        <div class="small text-muted">Confirmed paid bookings</div>
+      </div>
+    </div>
+
+    <!-- Today's Check-Ins -->
+    <div class="col-sm-6 col-xl-3">
+      <div class="card shadow-sm border border-start border-4 border-info p-3">
+        <span class="text-muted small fw-bold text-uppercase">Today's Check-Ins</span>
+        <div class="h3 fw-bold text-info mt-2 mb-1">{{ metrics.todayCheckIns || 0 }}</div>
+        <div class="small text-muted">Scheduled arrivals today</div>
+      </div>
+    </div>
+
+    <!-- Today's Check-Outs -->
+    <div class="col-sm-6 col-xl-3">
+      <div class="card shadow-sm border border-start border-4 border-warning p-3">
+        <span class="text-muted small fw-bold text-uppercase">Today's Check-Outs</span>
+        <div class="h3 fw-bold text-warning mt-2 mb-1">{{ metrics.todayCheckOuts || 0 }}</div>
+        <div class="small text-muted">Scheduled departures today</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Operational Volume Status -->
+  <div class="card shadow-sm border p-4 mb-4">
+    <h5 class="fw-bold text-dark mb-3"><i class="bi bi-pie-chart text-primary me-2"></i> Operational Status Counts</h5>
+    <div class="row g-3 text-center">
+      <div class="col-6 col-md-4 col-lg-2">
+        <div class="p-3 bg-light rounded border">
+          <span class="text-muted small d-block">Confirmed</span>
+          <span class="fs-4 fw-bold text-success">{{ metrics.reservationCountsByStatus?.['CONFIRMED'] || 0 }}</span>
+        </div>
+      </div>
+      <div class="col-6 col-md-4 col-lg-2">
+        <div class="p-3 bg-light rounded border">
+          <span class="text-muted small d-block">Checked In</span>
+          <span class="fs-4 fw-bold text-primary">{{ metrics.reservationCountsByStatus?.['CHECKED_IN'] || 0 }}</span>
+        </div>
+      </div>
+      <div class="col-6 col-md-4 col-lg-2">
+        <div class="p-3 bg-light rounded border">
+          <span class="text-muted small d-block">Checked Out</span>
+          <span class="fs-4 fw-bold text-secondary">{{ metrics.reservationCountsByStatus?.['CHECKED_OUT'] || 0 }}</span>
+        </div>
+      </div>
+      <div class="col-6 col-md-4 col-lg-2">
+        <div class="p-3 bg-light rounded border">
+          <span class="text-muted small d-block">Cancellations</span>
+          <span class="fs-4 fw-bold text-danger">{{ metrics.cancellationsCount || 0 }}</span>
+        </div>
+      </div>
+      <div class="col-6 col-md-4 col-lg-2">
+        <div class="p-3 bg-light rounded border">
+          <span class="text-muted small d-block">No-Shows</span>
+          <span class="fs-4 fw-bold text-dark">{{ metrics.noShowCount || 0 }}</span>
+        </div>
+      </div>
+      <div class="col-6 col-md-4 col-lg-2">
+        <div class="p-3 bg-light rounded border">
+          <span class="text-muted small d-block">Pending Payment</span>
+          <span class="fs-4 fw-bold text-warning">{{ metrics.pendingPaymentsCount || 0 }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Operational Quick Action Cards -->
+  <div class="row g-4">
+    <div class="col-md-4">
+      <div class="card shadow-sm border p-4 h-100">
+        <h6 class="fw-bold text-dark mb-2"><i class="bi bi-door-open text-primary me-1"></i> Housekeeping</h6>
+        <p class="text-muted small">Update room cleanliness states (CLEAN, DIRTY, INSPECTED) to enable guest check-ins.</p>
+        <a routerLink="/admin/rooms" class="btn btn-outline-primary btn-sm mt-auto">Manage Rooms</a>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card shadow-sm border p-4 h-100">
+        <h6 class="fw-bold text-dark mb-2"><i class="bi bi-person-x text-warning me-1"></i> No-Show Operations</h6>
+        <p class="text-muted small">Process unfulfilled reservations on or after check-in dates to release inventory.</p>
+        <a routerLink="/admin/reservations" class="btn btn-outline-warning text-dark btn-sm mt-auto">View Bookings</a>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card shadow-sm border p-4 h-100">
+        <h6 class="fw-bold text-dark mb-2"><i class="bi bi-shield-check text-success me-1"></i> Audit Compliance</h6>
+        <p class="text-muted small">Inspect tamper-evident system logs across authentication, pricing, and moderation.</p>
+        <a routerLink="/admin/audit" class="btn btn-outline-success btn-sm mt-auto">View Audit Logs</a>
+      </div>
+    </div>
+  </div>
+</div>

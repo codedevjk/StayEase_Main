@@ -1,0 +1,87 @@
+.text-truncate-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.tracking-wide {
+  letter-spacing: 0.08em;
+}
+
+/* Segmented Search Card (MakeMyTrip Style) */
+.search-card-container {
+  background-color: #ffffff;
+  border-radius: 1rem;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+  border: 1px solid #e2e8f0;
+  position: relative;
+  z-index: 20;
+}
+
+.search-segment-box {
+  padding: 1rem 1.25rem;
+  transition: background-color 0.18s ease-in-out;
+  border-radius: 0.75rem;
+  position: relative;
+}
+
+.search-segment-box:hover {
+  background-color: #f8fafc;
+}
+
+.search-segment-label {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #475569;
+  text-transform: capitalize;
+  margin-bottom: 0.25rem;
+  letter-spacing: 0.01em;
+  display: block;
+}
+
+.search-box-field {
+  box-shadow: none !important;
+  color: #0f172a !important;
+}
+
+.search-box-field:focus {
+  background-color: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.search-segment-sub {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-top: 0.15rem;
+}
+
+/* Big Search CTA Button */
+.search-action-btn {
+  background: linear-gradient(90deg, #2563eb 0%, #3b82f6 100%);
+  border: none;
+  font-size: 1.2rem;
+  letter-spacing: 0.05em;
+  padding: 0.8rem 3.5rem;
+  box-shadow: 0 8px 25px rgba(37, 99, 235, 0.4);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.search-action-btn:hover:not(:disabled) {
+  background: linear-gradient(90deg, #1d4ed8 0%, #2563eb 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(37, 99, 235, 0.5);
+}
+
+.search-action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 991.98px) {
+  .search-segment-box {
+    border-right: none !important;
+    border-bottom: 1px solid #f1f5f9;
+  }
+}

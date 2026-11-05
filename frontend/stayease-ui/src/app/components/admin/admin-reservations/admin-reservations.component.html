@@ -1,0 +1,160 @@
+<div class="card shadow-sm border p-4 mb-4">
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+    <div>
+      <h3 class="font-serif fw-bold text-dark mb-1">Reservation Operations</h3>
+      <p class="text-muted small mb-0">Record guest no-show departures, reconcile indeterminate payments, and manage reservations</p>
+    </div>
+
+    <!-- Status Filter and Lookup -->
+    <div class="d-flex flex-wrap align-items-center gap-2">
+      <select [(ngModel)]="selectedStatus" (change)="onStatusChange()" class="form-select form-select-sm" style="width: 170px;">
+        <option value="ALL">All Statuses</option>
+        <option value="CONFIRMED">Confirmed</option>
+        <option value="CHECKED_IN">Checked In</option>
+        <option value="CHECKED_OUT">Checked Out</option>
+        <option value="CANCELLED">Cancelled</option>
+        <option value="NO_SHOW">No-Show</option>
+        <option value="PENDING_PAYMENT">Pending Payment</option>
+      </select>
+
+      <div class="input-group input-group-sm" style="width: 220px;">
+        <input type="number" [(ngModel)]="lookupId" (keyup.enter)="onLookup()" class="form-control" placeholder="Search by ID...">
+        <button (click)="onLookup()" class="btn btn-outline-primary" [disabled]="loading">
+          <i class="bi bi-search"></i>
+        </button>
+      </div>
+
+      <button (click)="loadReservations()" [disabled]="loading" class="btn btn-sm btn-outline-secondary" title="Refresh">
+        <i class="bi bi-arrow-clockwise"></i>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div *ngIf="successMessage" class="alert alert-success d-flex align-items-center small mb-3 alert-dismissible fade show">
+  <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+  <span>{{ successMessage }}</span>
+  <button type="button" class="btn-close" (click)="successMessage = null"></button>
+</div>
+<div *ngIf="errorMessage" class="alert alert-danger d-flex align-items-center small mb-3 alert-dismissible fade show">
+  <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+  <span>{{ errorMessage }}</span>
+  <button type="button" class="btn-close" (click)="errorMessage = null"></button>
+</div>
+
+<app-loading-spinner *ngIf="loading" message="Loading reservations..."></app-loading-spinner>
+
+<div *ngIf="!loading && reservations.length === 0" class="card shadow-sm border p-5 text-center">
+  <app-empty-state
+    icon="bi bi-calendar2-range"
+    title="No Reservations Matching Criteria"
+    message="There are currently no bookings with the selected status filter.">
+  </app-empty-state>
+</div>
+
+<!-- Table -->
+<div *ngIf="!loading && reservations.length > 0" class="card shadow-sm border overflow-hidden">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0 small">
+      <thead class="table-light">
+        <tr>
+          <th>Reference</th>
+          <th>Guest Details</th>
+          <th>Dates</th>
+          <th>Policy / Total</th>
+          <th>Status</th>
+          <th class="text-end">Admin Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let r of reservations">
+          <td>
+            <span class="fw-bold font-monospace text-primary fs-6">{{ r.referenceNumber || r.publicReference || ('RES-' + r.id) }}</span>
+            <div class="text-muted small">{{ r.hotelName || ('Hotel #' + r.hotelId) }} • Room Type #{{ r.roomTypeId }}</div>
+          </td>
+          <td>
+            <div class="fw-bold text-dark">{{ r.guestName || ('Guest #' + r.userId) }}</div>
+            <div class="text-muted small">
+              <span *ngIf="r.guestEmail"><i class="bi bi-envelope me-1"></i>{{ r.guestEmail }}</span>
+              <span *ngIf="r.guestEmail && r.guestPhone"> • </span>
+              <span *ngIf="r.guestPhone"><i class="bi bi-telephone me-1"></i>{{ r.guestPhone }}</span>
+              <span *ngIf="!r.guestEmail && !r.guestPhone">Registered User #{{ r.userId }}</span>
+            </div>
+          </td>
+          <td>
+            <div class="fw-semibold text-dark">{{ r.checkInDate }} to {{ r.checkOutDate }}</div>
+            <div class="text-muted small">{{ r.nights }} night(s) • {{ r.guestCount }} guest(s)</div>
+          </td>
+          <td>
+            <div class="fw-bold text-dark">₹{{ r.totalAmount | number:'1.2-2' }}</div>
+            <div class="text-muted small">
+              <span class="badge bg-light text-dark border">{{ r.paymentPolicy }}</span>
+              <span class="ms-1 fw-semibold"
+                [class.text-success]="r.paymentStatus === 'PAID'"
+                [class.text-danger]="r.paymentStatus === 'FAILED'"
+                [class.text-warning]="r.paymentStatus === 'PENDING'">
+                ({{ r.paymentStatus }})
+              </span>
+            </div>
+          </td>
+          <td>
+            <span class="badge"
+              [class.bg-success]="(r.status || r.reservationStatus) === 'CONFIRMED'"
+              [class.bg-warning]="(r.status || r.reservationStatus) === 'PENDING_PAYMENT'"
+              [class.text-dark]="(r.status || r.reservationStatus) === 'PENDING_PAYMENT'"
+              [class.bg-info]="(r.status || r.reservationStatus) === 'CHECKED_IN'"
+              [class.bg-secondary]="(r.status || r.reservationStatus) === 'CHECKED_OUT'"
+              [class.bg-danger]="(r.status || r.reservationStatus) === 'CANCELLED' || (r.status || r.reservationStatus) === 'NO_SHOW' || (r.status || r.reservationStatus) === 'PAYMENT_FAILED'">
+              {{ r.status || r.reservationStatus }}
+            </span>
+            <div *ngIf="r.assignedRoomNumber" class="text-success small fw-bold">Room {{ r.assignedRoomNumber }}</div>
+          </td>
+          <td class="text-end">
+            <!-- No Show Action (Valid on/after check-in date for confirmed unfulfilled) -->
+            <button *ngIf="(r.status || r.reservationStatus) === 'CONFIRMED'" (click)="openNoShowModal(r)" class="btn btn-outline-warning text-dark btn-sm me-1" title="Record No Show">
+              <i class="bi bi-person-x"></i> No-Show
+            </button>
+            <!-- Reconcile Action -->
+            <button (click)="onReconcile(r)" class="btn btn-outline-secondary btn-sm" title="Reconcile Financials">
+              <i class="bi bi-arrow-repeat"></i>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODAL: NO-SHOW CONFIRMATION
+     ══════════════════════════════════════════════════════════════ -->
+<div *ngIf="selectedForNoShow" class="modal d-block bg-dark bg-opacity-50" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content shadow-lg border-0 rounded-3">
+      <div class="modal-header border-bottom">
+        <h5 class="modal-title font-serif fw-bold text-warning text-dark">
+          <i class="bi bi-person-x-fill me-2 text-warning"></i> Mark Reservation NO_SHOW
+        </h5>
+        <button type="button" class="btn-close" (click)="selectedForNoShow = null"></button>
+      </div>
+      <div class="modal-body p-4">
+        <p class="small text-muted mb-3">
+          Recording NO_SHOW on booking <strong>{{ selectedForNoShow.referenceNumber }}</strong> transitions its status and immediately releases the nightly inventory hold back to the sellable ledger.
+        </p>
+        <div class="mb-3">
+          <label class="form-label small fw-bold text-muted">Administrative Notes</label>
+          <textarea [(ngModel)]="adminNotes" class="form-control form-control-sm" rows="3"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer border-top">
+        <button type="button" class="btn btn-secondary btn-sm" (click)="selectedForNoShow = null">Cancel</button>
+        <button type="button" [disabled]="processingNoShow" (click)="submitNoShow()" class="btn btn-warning text-dark btn-sm px-3 fw-bold">
+          <span *ngIf="processingNoShow" class="spinner-border spinner-border-sm me-1"></span>
+          Execute No-Show
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

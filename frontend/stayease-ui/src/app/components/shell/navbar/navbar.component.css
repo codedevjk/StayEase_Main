@@ -1,0 +1,9 @@
+.nav-link.active {
+  font-weight: 700;
+  color: #fbbf24 !important;
+  border-bottom: 2px solid #fbbf24;
+}
+
+.tracking-wide {
+  letter-spacing: 0.05em;
+}

@@ -1,48 +1,141 @@
-# ───────────────────────────────────────────────
+# ==============================================================================
 # StayEase .gitignore
-# Java 21 / Spring Boot 3 / Maven / Angular 16
-# ───────────────────────────────────────────────
+# Full-Stack Hotel Reservation Microservices Platform
+# Tech Stack: Java 21 / Spring Boot 3.3.5 / Maven / Angular 16 / MySQL
+# ==============================================================================
 
-# ─── Build output ──────────────────────────────
+# ------------------------------------------------------------------------------
+# IDEs & Developer Tooling
+# ------------------------------------------------------------------------------
+.idea/
+**/.idea/
+.vscode/
+**/.vscode/
+*.iml
+**/*.iml
+*.iws
+*.ipr
+*.swp
+*~
+.classpath
+**/.classpath
+.project
+**/.project
+.settings/
+**/.settings/
+.springBeans
+.factorypath
+**/.factorypath
+.sts4-cache/
+**/.sts4-cache/
+.metadata/
+**/.metadata/
+bin/
+**/bin/
+
+# ------------------------------------------------------------------------------
+# Operating System Files
+# ------------------------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+desktop.ini
+$RECYCLE.BIN/
+
+# ------------------------------------------------------------------------------
+# Backend: Java / Spring Boot / Maven Build Outputs
+# ------------------------------------------------------------------------------
 target/
+**/target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
-
-# ─── Maven wrapper ─────────────────────────────
-.mvn/wrapper/maven-wrapper.properties
-# keep: .mvn/wrapper/maven-wrapper.jar
-
-# ─── Compiled class files ──────────────────────
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
 *.class
+**/*.class
 *.jar
+**/*.jar
+!backend/**/src/main/resources/*.jar
 *.war
-*.ear
+**/*.war
 *.nar
-
-# ─── Logs ──────────────────────────────────────
-logs/
-*.log
-*.log.*
-
-# ─── Spring Boot devtools ──────────────────────
+*.ear
+*.zip
+*.tar.gz
+*.rar
+hs_err_pid*
+replay_pid*
 .spring-boot-devtools.properties
 spring-devtools.properties
 
-# ─── Local / environment configuration files ───
-# Template files (.example) ARE committed.
-# Actual local files with real secrets are NOT.
+# ------------------------------------------------------------------------------
+# Frontend: Angular / Node / TypeScript Build Outputs
+# ------------------------------------------------------------------------------
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+dist-server/
+**/dist-server/
+out-tsc/
+**/out-tsc/
+.angular/
+**/.angular/
+coverage/
+**/coverage/
+.npm/
+**/.npm/
+.yarn/
+**/.yarn/
+*.tsbuildinfo
+.sass-cache/
+**/.sass-cache/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ------------------------------------------------------------------------------
+# Logs & Temporary Files
+# ------------------------------------------------------------------------------
+logs/
+**/logs/
+*.log
+**/*.log
+*.log.*
+scratch/
+**/scratch/
+tmp/
+**/tmp/
+temp/
+**/temp/
+
+# ------------------------------------------------------------------------------
+# Environment Variables, Secrets & Credentials
+# ------------------------------------------------------------------------------
+.env
+**/.env
+.env.*
+**/.env.*
+!.env.example
+!**/.env.example
 **/application-local.yml
 **/application-local.yaml
 **/application-local.properties
 **/application-secrets.yml
 **/application-secrets.yaml
 **/application-secrets.properties
-**/.env
-**/.env.*
-!**/.env.example
-
-# ─── Secret / credential files ─────────────────
 *.pem
 *.key
 *.p12
@@ -50,50 +143,10 @@ spring-devtools.properties
 *.keystore
 jwt_secret.txt
 
-# ─── IDEs ──────────────────────────────────────
-.idea/
-*.iml
-*.iws
-.project
-.classpath
-.settings/
-*.eclipse
-.sts4-cache/
-.factorypath
-.metadata/
-bin/
-
-# ─── VS Code ───────────────────────────────────
-.vscode/settings.json
-.vscode/launch.json
-# keep: .vscode/extensions.json
-
-# ─── OS-generated files ────────────────────────
-.DS_Store
-Thumbs.db
-Desktop.ini
-$RECYCLE.BIN/
-
-# ─── Angular / Node ────────────────────────────
-stayease-ui/node_modules/
-stayease-ui/dist/
-stayease-ui/.angular/
-stayease-ui/.sass-cache/
-stayease-ui/npm-debug.log*
-stayease-ui/yarn-error.log*
-
-# ─── SonarQube ─────────────────────────────────
+# ------------------------------------------------------------------------------
+# Code Quality & QA Scanners
+# ------------------------------------------------------------------------------
 .sonar/
+**/.sonar/
 .scannerwork/
-
-# ─── Postman ───────────────────────────────────
-# Postman environment files may contain tokens; keep only templates.
-postman/*environment*.json
-!postman/*environment*.example.json
-
-# ─── Docker (not in scope but guard anyway) ────
-*.dockerignore
-
-# ─── Scratch / temp ────────────────────────────
-scratch/
-tmp/
+**/.scannerwork/

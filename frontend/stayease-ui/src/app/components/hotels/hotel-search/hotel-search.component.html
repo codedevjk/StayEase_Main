@@ -1,0 +1,148 @@
+<div class="bg-primary text-white py-4 shadow-sm" style="background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%) !important;">
+  <div class="container">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+      <div>
+        <h1 class="h3 font-serif fw-bold mb-1">Explore Hotels & Resorts</h1>
+        <p class="small text-light opacity-90 mb-0">Browse verified properties with instant booking and flexible policies</p>
+      </div>
+      <div *ngIf="totalElements > 0" class="mt-2 mt-md-0">
+        <span class="badge bg-warning text-dark fw-bold px-3 py-2 fs-6">
+          {{ totalElements }} Properties Found
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container py-4">
+  <div class="row g-4">
+    <!-- Filter Sidebar (Col-lg-3) -->
+    <div class="col-lg-3">
+      <div class="card shadow-sm border p-4 sticky-top" style="top: 80px;">
+        <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+          <h5 class="fw-bold text-dark mb-0"><i class="bi bi-funnel text-primary me-1"></i> Filters</h5>
+          <button (click)="resetFilters()" class="btn btn-link text-danger p-0 small text-decoration-none fw-semibold"><i class="bi bi-arrow-counterclockwise me-1"></i> Reset</button>
+        </div>
+
+        <form (ngSubmit)="onFilterSubmit()">
+          <!-- City Filter -->
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-muted"><i class="bi bi-geo-alt text-danger me-1"></i> Destination / City</label>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text"><i class="bi bi-search text-muted"></i></span>
+              <input type="text" [(ngModel)]="filterCity" name="city" class="form-control" placeholder="e.g. Goa, Mumbai">
+            </div>
+          </div>
+
+          <!-- Star Rating Filter -->
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-muted"><i class="bi bi-star-fill text-warning me-1"></i> Minimum Rating</label>
+            <select [(ngModel)]="filterMinRating" name="minRating" (change)="onFilterSubmit()" class="form-select form-select-sm">
+              <option [ngValue]="null">Any Star Rating</option>
+              <option [ngValue]="3">3+ Stars</option>
+              <option [ngValue]="4">4+ Stars</option>
+              <option [ngValue]="5">5 Stars Luxury</option>
+            </select>
+          </div>
+
+          <!-- Price Range Filter -->
+          <div class="mb-4">
+            <label class="form-label small fw-bold text-muted"><i class="bi bi-currency-rupee text-success me-1"></i> Price Range (₹ / night)</label>
+            <div class="row g-2">
+              <div class="col-6">
+                <input type="number" [(ngModel)]="filterMinPrice" name="minPrice" placeholder="Min" class="form-control form-control-sm">
+              </div>
+              <div class="col-6">
+                <input type="number" [(ngModel)]="filterMaxPrice" name="maxPrice" placeholder="Max" class="form-control form-control-sm">
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-sm w-100 shadow-sm py-2">
+            <i class="bi bi-funnel-fill me-1"></i> Apply Filters
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Hotel List Grid (Col-lg-9) -->
+    <div class="col-lg-9">
+      <app-error-state *ngIf="errorMessage" [message]="errorMessage" (onRetry)="executeSearch()"></app-error-state>
+
+      <app-loading-spinner *ngIf="loading" message="Finding available hotels..."></app-loading-spinner>
+
+      <div *ngIf="!loading && hotels.length === 0" class="card shadow-sm border p-5 text-center">
+        <app-empty-state
+          icon="bi bi-search"
+          title="No properties match your search"
+          message="Try adjusting your destination, price range, or amenities to see more hotels."
+          actionText="Clear All Filters"
+          actionRoute="/hotels">
+        </app-empty-state>
+      </div>
+
+      <!-- Hotel Cards -->
+      <div *ngIf="!loading && hotels.length > 0" class="row g-4">
+        <div *ngFor="let hotel of hotels" class="col-md-6 col-xl-4">
+          <div class="card shadow-sm border h-100 d-flex flex-column overflow-hidden">
+            <!-- Image Area -->
+            <div class="position-relative overflow-hidden" style="height: 180px;">
+              <img [src]="getHotelImage(hotel)" [alt]="hotel.name" class="w-100 h-100" style="object-fit: cover;" loading="lazy">
+              <div class="position-absolute top-0 end-0 m-2">
+                <span class="badge bg-dark bg-opacity-75 text-warning fw-bold small shadow-sm">
+                  <i class="bi bi-star-fill text-warning me-1"></i> {{ hotel.starRating }} Star
+                </span>
+              </div>
+              <div class="position-absolute bottom-0 start-0 m-2 text-white">
+                <span class="badge bg-primary bg-opacity-90 small shadow-sm">
+                  <i class="bi bi-geo-alt-fill me-1"></i> {{ hotel.destination || hotel.city || 'India' }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Card Body -->
+            <div class="card-body p-3 d-flex flex-column">
+              <h5 class="fw-bold font-serif text-dark mb-1 h6">{{ hotel.name }}</h5>
+              <p class="text-muted small mb-2 text-truncate" title="{{ hotel.address }}">
+                <i class="bi bi-geo-alt me-1 text-danger"></i> {{ hotel.address }}
+              </p>
+
+              <!-- Amenities Pills -->
+              <div *ngIf="hotel.amenities && hotel.amenities.length > 0" class="d-flex flex-wrap gap-1 mb-3">
+                <span *ngFor="let am of hotel.amenities.slice(0, 2)" class="badge bg-light text-secondary border small">
+                  {{ am.name || am }}
+                </span>
+                <span *ngIf="hotel.amenities.length > 2" class="badge bg-light text-muted border small">
+                  +{{ hotel.amenities.length - 2 }}
+                </span>
+              </div>
+
+              <!-- Price & CTA -->
+              <div class="d-flex justify-content-between align-items-end pt-2 border-top mt-auto">
+                <div>
+                  <span class="text-muted small d-block" style="font-size: 0.75rem;">From</span>
+                  <span class="fw-bold text-primary fs-5">₹{{ (hotel.startingNightlyRate || hotel.startingPrice || 3200) | number:'1.0-0' }}</span>
+                  <span class="text-muted small">/nt</span>
+                </div>
+                <a [routerLink]="['/hotels', hotel.id]" [queryParams]="{ checkIn: checkInDate, checkOut: checkOutDate, guests: guests }" class="btn btn-primary btn-sm px-3 shadow-sm">
+                  Select <i class="bi bi-chevron-right ms-1"></i>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pagination Controls -->
+      <div *ngIf="!loading && totalPages > 1" class="d-flex justify-content-center align-items-center gap-2 mt-5">
+        <button [disabled]="currentPage === 0" (click)="onPageChange(currentPage - 1)" class="btn btn-outline-secondary btn-sm px-3">
+          <i class="bi bi-chevron-left me-1"></i> Previous
+        </button>
+        <span class="text-muted small px-2">Page <strong>{{ currentPage + 1 }}</strong> of {{ totalPages }}</span>
+        <button [disabled]="currentPage >= totalPages - 1" (click)="onPageChange(currentPage + 1)" class="btn btn-outline-secondary btn-sm px-3">
+          Next <i class="bi bi-chevron-right ms-1"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

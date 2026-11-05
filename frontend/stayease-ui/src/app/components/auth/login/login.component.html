@@ -1,0 +1,68 @@
+<div class="container py-5 my-4">
+  <div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+      <div class="card p-4 p-md-5 shadow-sm border">
+        <div class="text-center mb-4">
+          <i class="bi bi-buildings-fill text-primary display-4"></i>
+          <h2 class="font-serif fw-bold mt-2">Welcome Back</h2>
+          <p class="text-muted small">Sign in to manage your luxury hotel reservations</p>
+        </div>
+
+        <div *ngIf="sessionExpired" class="alert alert-warning small d-flex align-items-center mb-3">
+          <i class="bi bi-clock-history me-2 fs-5"></i>
+          <span>Your session has expired. Please sign in again.</span>
+        </div>
+
+        <div *ngIf="errorMessage" class="alert alert-danger small d-flex align-items-center mb-3">
+          <i class="bi bi-exclamation-circle-fill me-2 fs-5"></i>
+          <span>{{ errorMessage }}</span>
+        </div>
+
+        <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+          <!-- Email Input -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold small text-muted">Email Address</label>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0"><i class="bi bi-envelope text-muted"></i></span>
+              <input type="email" formControlName="email" class="form-control border-start-0" placeholder="name@example.com"
+                [class.is-invalid]="loginForm.get('email')?.touched && loginForm.get('email')?.invalid">
+            </div>
+            <div *ngIf="loginForm.get('email')?.touched && loginForm.get('email')?.errors?.['required']" class="text-danger small mt-1">
+              Email is required.
+            </div>
+            <div *ngIf="loginForm.get('email')?.touched && loginForm.get('email')?.errors?.['email']" class="text-danger small mt-1">
+              Please enter a valid email address.
+            </div>
+          </div>
+
+          <!-- Password Input -->
+          <div class="mb-4">
+            <label class="form-label fw-semibold small text-muted">Password</label>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0"><i class="bi bi-lock text-muted"></i></span>
+              <input type="password" formControlName="password" class="form-control border-start-0" placeholder="••••••••"
+                [class.is-invalid]="loginForm.get('password')?.touched && loginForm.get('password')?.invalid">
+            </div>
+            <div *ngIf="loginForm.get('password')?.touched && loginForm.get('password')?.errors?.['required']" class="text-danger small mt-1">
+              Password is required.
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <button type="submit" [disabled]="loading" class="btn btn-primary w-100 py-2 d-flex justify-content-center align-items-center shadow-sm">
+            <span *ngIf="loading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            <span *ngIf="!loading"><i class="bi bi-box-arrow-in-right me-1"></i> Sign In</span>
+            <span *ngIf="loading">Authenticating...</span>
+          </button>
+        </form>
+
+        <div class="text-center mt-4 pt-3 border-top">
+          <p class="text-muted small mb-0">
+            Don't have an account yet? 
+            <a routerLink="/register" class="fw-bold text-primary text-decoration-none">Create an Account</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,10 @@
+@media print {
+  .no-print, nav, footer, app-navbar, app-footer {
+    display: none !important;
+  }
+  .print-area {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+}

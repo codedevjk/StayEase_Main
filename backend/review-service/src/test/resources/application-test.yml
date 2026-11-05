@@ -1,0 +1,52 @@
+spring:
+  application:
+    name: stayease-review-service-test
+
+  messages:
+    basename: messages,message
+    encoding: UTF-8
+
+  datasource:
+    url: jdbc:h2:mem:stayease_review_test_db;DB_CLOSE_DELAY=-1;MODE=MySQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  sql:
+    init:
+      mode: never
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+
+  cloud:
+    consul:
+      enabled: false
+      discovery:
+        enabled: false
+
+server:
+  port: -1
+
+stayease:
+  jwt:
+    # 256-bit Base64-encoded test secret key
+    secret: dGVzdC1zZWNyZXQta2V5LWZvci11c2VyLXNlcnZpY2UtdGVzdHMtbXVzdC1iZS0yNTYtYml0cw==
+    expiration-seconds: 900
+    issuer: stayease
+  review:
+    eligibility-window-days: 30
+  security:
+    verify-token-version-with-user-service: false
+
+logging:
+  config: classpath:log4j2.properties
+  level:
+    com.stayease: DEBUG
+    org.springframework.security: WARN

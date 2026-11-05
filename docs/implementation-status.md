@@ -1,24 +1,29 @@
-# StayEase Implementation Status & Phase 2 Completion Report
+# StayEase Implementation Status — Phase 5: Review Service Implementation Report
 
-**Phase:** Phase 2 — User Service and Security Baseline Complete  
-**Document Version:** 1.3  
-**Timestamp:** 2026-10-19T01:15:00+05:30  
-**Status:** Phase 2 Complete — Awaiting Review & Phase 3 Authorization  
+**Current Phase:** Phase 5 — Review Service Implementation Complete  
+**Document Version:** 1.7  
+**Timestamp:** 2026-10-21T03:30:00+05:30  
+**Status:** Phase 5 Business Implementation & Security Verification Complete — Awaiting Phase 6 Authorization  
 
 ---
 
 ## 1. Executive Summary
 
-Phase 2 of StayEase (User Service & Security Baseline) has been completed in full compliance with the approved architecture, technical decisions (`docs/decisions.md`), API specifications (`docs/api-contract.md`), and safety constraints.
+Phase 5 of the StayEase capstone project has been fully implemented in `backend/review-service`, strictly following the approved SRS v1.1, API contract (`docs/api-contract.md`), architectural blueprint (`docs/implementation-blueprint.md`), test plan (`docs/test-plan.md`), requirement traceability (`docs/requirement-traceability.md`), and CourseCart coding conventions (`J:\Capstone\CourseCart`).
 
-All requested User Service functionality has been implemented, validated, and verified through a complete suite of unit, security, and integration tests:
-- **Public Authentication:** `POST /api/auth/register`, `POST /api/auth/login`
-- **User Profile Management:** `GET /api/users/me`, `PUT /api/users/me`, `PATCH /api/users/me/email`
-- **Administrative Operations:** `GET /api/admin/users?page=&size=&query=`, `POST /api/admin/users/{userId}/password-reset`
-- **Audit Logging:** `GET /api/admin/audit?from=&to=&category=&actorId=&entityId=&page=&size=`
-- **Internal Inter-Service Validation:** `GET /internal/users/{userId}/token-version`
+The implemented features include:
+1. **Verified Guest Review Submission:** Only authenticated guests with a completed stay can post a review (`POST /api/reviews`). Ownership is enforced via authenticated `UserPrincipal`, not client-supplied user IDs.
+2. **Review Eligibility Verification via Downstream Reservation Service:** Review Service calls `GET /internal/reservations/{reservationId}/review-eligibility?userId={userId}` over WebClient with a 3-second timeout and fails closed with HTTP 503 if Reservation Service is unavailable. The stay must be `CHECKED_OUT` and within the 30-day eligibility window.
+3. **One-Review-Per-Reservation Invariant:** Double-layer defense with logical application checks (`existsByReservationId`) and a database unique constraint (`uq_review_reservation`) preventing duplicate reviews even under concurrent race conditions.
+4. **Rating & Comment Validation:** Rating strictly validated between 1 and 5 stars. Comment required between 10 and 1,000 characters.
+5. **Public Hotel Reviews & Summary Calculation:** Public endpoints `GET /api/hotels/{hotelId}/reviews` (paginated, sorted by date descending) and `GET /api/hotels/{hotelId}/reviews/summary` (aggregating total reviews and average rating rounded to 1 decimal place with `RoundingMode.HALF_UP`).
+6. **Single Review Lookup:** Public lookup `GET /api/reviews/{reviewId}` returning published review details.
+7. **Administrative Review Moderation:** Administrators (`ROLE_ADMIN`) can remove inappropriate reviews (`POST /api/admin/reviews/{reviewId}/remove`) with a mandatory reason. Soft-delete transitions the status to `REMOVED` and excludes the review from public listing and summary calculations.
+8. **Audit Trail Persistence & Querying:** Administrative removal and critical actions record structured audit events (`review_audit_events`) with JSON before/after snapshots, actor metadata, client IP, and correlation IDs. Admins can filter audit logs via `GET /api/admin/audit` with category, actor, entity, and timestamp ranges.
+9. **CourseCart Compliance & Logging:** Standardized package hierarchy (`client`, `config`, `controller`, `dto`, `entity`, `enums`, `exception`, `repository`, `security`, `service`), Apache Commons Logging backed by native `log4j2.properties`, externalized messages in `messages.properties`, standard `ErrorResponse` envelope, and Spring Security with JWT and `tokenVersion` revocation validation.
+10. **Gateway Route Order Adjustment:** Updated `gateway-service` route definitions so `/api/hotels/*/reviews` routes to `review-service` prior to Property Service's generic `/api/hotels/**` route.
 
-Zero business code for Property, Reservation, or Review services was modified or prematurely created. No infrastructure commands were run against MySQL or Consul.
+All **40 automated tests in Review Service** and **196 automated tests across the full multi-module project** pass hermetically on H2 with zero failures, zero errors, and zero skipped tests.
 
 ---
 
@@ -26,238 +31,146 @@ Zero business code for Property, Reservation, or Review services was modified or
 
 ### 2.1 Test Execution Summary
 
-| Test Suite Class | Test Scope & Category | Tests Run | Failures | Errors | Skipped | Time |
-|---|---|---|---|---|---|---|
-| `JwtTokenProviderTest` | Standard claims, 15m TTL, expired & tampered tokens | 5 | 0 | 0 | 0 | 1.31s |
-| `PasswordGeneratorTest` | SecureRandom complexity, length >= 12, randomness | 3 | 0 | 0 | 0 | 0.03s |
-| `AuthServiceTest` | SEC-01 (forced ROLE_USER), SEC-02 (409 duplicate), SEC-03 (generic login) | 5 | 0 | 0 | 0 | 0.23s |
-| `UserServiceTest` | Profile retrieval/update, email update, SEC-05 (tokenVersion), SEC-06 (admin reset) | 9 | 0 | 0 | 0 | 0.27s |
-| `UserAuditServiceTest` | JSON state serialization, sensitive-credential exclusion | 2 | 0 | 0 | 0 | 0.42s |
-| `AdminBootstrapRunnerTest` | Disabled-by-default, idempotent skip, safe admin seeding | 2 | 0 | 0 | 0 | 5.99s |
-| `UserControllerSecurityIntegrationTest` | MockMvc + Spring Security + H2 DB: all endpoints, token invalidation, role access | 18 | 0 | 0 | 0 | 43.92s |
-| **Total User Service Tests** | **Comprehensive User Service Suite** | **44** | **0** | **0** | **0** | **51.76s** |
-| `StayEaseCommonSmokeTest` | Shared DTOs and Enums (from Phase 1) | 4 | 0 | 0 | 0 | 8.05s |
-| **Workspace Total Tests** | **Full Multi-Module Reactor Build** | **48** | **0** | **0** | **0** | **1m 03s** |
+| Module | Test Suite Class | Test Scope & Category | Tests Run | Failures | Errors | Skipped | Time |
+|---|---|---|---|---|---|---|---|
+| **Gateway Service** | `CorrelationIdGlobalFilterTest` | Gateway UUID generation & header propagation | 2 | 0 | 0 | 0 | 2.37s |
+| | `LoggingConfigurationTest` | Log4j2 SLF4J binding & Logback absence | 3 | 0 | 0 | 0 | 0.06s |
+| **User Service** | `AdminBootstrapRunnerTest`| Disabled-by-default, idempotent skip, safe admin seeding | 2 | 0 | 0 | 0 | 2.48s |
+| | `LoggingConfigurationTest` | Log4j2 SLF4J binding & Logback absence | 3 | 0 | 0 | 0 | 0.03s |
+| | `JwtTokenProviderTest` | Standard claims, 15m TTL, expired & tampered tokens | 5 | 0 | 0 | 0 | 0.37s |
+| | `AuthServiceTest` | SEC-01 (forced ROLE_USER), SEC-02 (409 duplicate), SEC-03 (generic login) | 5 | 0 | 0 | 0 | 0.14s |
+| | `UserAuditServiceTest` | JSON state serialization, sensitive-credential exclusion | 2 | 0 | 0 | 0 | 0.20s |
+| | `UserServiceTest` | Profile retrieval/update, email update, SEC-05 (tokenVersion), SEC-06 (admin reset) | 9 | 0 | 0 | 0 | 0.10s |
+| | `UserControllerSecurityIntegrationTest` | MockMvc + Spring Security + H2 DB: all endpoints, token invalidation, role access | 21 | 0 | 0 | 0 | 7.99s |
+| | `MessageResolutionTest` | Validation and business error message resolution from messages.properties | 3 | 0 | 0 | 0 | 1.85s |
+| **Property Service** | `PricingCalculatorServiceTest` | Rate precedence (seasonal > weekend > base), date intervals, 2dp HALF_UP | 6 | 0 | 0 | 0 | 0.09s |
+| | `PhysicalRoomServiceTest` | Room registration, duplicate room number, status transitions, check-in clean assignment | 7 | 0 | 0 | 0 | 0.10s |
+| | `RoomTypeServiceTest` | Room type creation/update, sellable capacity calculation excluding OUT_OF_SERVICE | 4 | 0 | 0 | 0 | 0.02s |
+| | `HotelServiceTest` | Dynamic search specifications, amenity subquery, price range, pagination | 5 | 0 | 0 | 0 | 0.38s |
+| | `LoggingConfigurationTest` | Log4j2 SLF4J binding & Logback absence | 3 | 0 | 0 | 0 | 0.03s |
+| | `PropertyControllerSecurityIntegrationTest` | MockMvc + Spring Security + H2 DB: public catalog, details, admin routes, internal endpoints, 401/403/409 | 15 | 0 | 0 | 0 | 12.74s |
+| | `MessageResolutionTest` | Validation and business error message resolution from messages.properties | 3 | 0 | 0 | 0 | 1.91s |
+| **Reservation Service** | `LoggingConfigurationTest` | Log4j2 SLF4J binding & Logback absence | 3 | 0 | 0 | 0 | 0.03s |
+| | `MessageResolutionTest` | Validation and domain error message resolution from messages.properties | 3 | 0 | 0 | 0 | 1.95s |
+| | `PricingServiceTest` | Rate calculation, 12% tax, scale 2 HALF_UP, JSON snapshot, cancellation penalty | 4 | 0 | 0 | 0 | 0.05s |
+| | `InventoryLedgerServiceTest` | Pessimistic locking, coverage guarantee, hold/reserve/release/confirm invariant checks | 7 | 0 | 0 | 0 | 0.18s |
+| | `PaymentServiceTest` | Payment simulation, idempotency replay/mismatch, late-payment rejection, reconciliation required | 10 | 0 | 0 | 0 | 0.25s |
+| | `ReservationServiceTest` | Full lifecycle, cancel, amend, check-in clean assignment, checkout, no-show, invoice, dashboard | 19 | 0 | 0 | 0 | 0.90s |
+| | `HoldAndExpirySchedulerTest` | Prepaid 10m hold expiry, pay-later payment deadline cancellation | 2 | 0 | 0 | 0 | 0.10s |
+| | `ReservationControllerSecurityIntegrationTest` | MockMvc + Spring Security + H2 DB: availability, booking, payment, cancel, check-in, check-out, invoice, admin routes | 10 | 0 | 0 | 0 | 8.45s |
+| **Review Service** | `LoggingConfigurationTest` | Log4j2 SLF4J binding & Logback absence | 3 | 0 | 0 | 0 | 0.03s |
+| | `MessageResolutionTest` | Validation and domain error message resolution from messages.properties | 3 | 0 | 0 | 0 | 1.90s |
+| | `ReviewServiceTest` | Creation, 30-day window, non-owner reject, duplicate reject, summary calc, admin remove, fail-closed | 12 | 0 | 0 | 0 | 0.15s |
+| | `ReviewAuditServiceTest` | Audit record serialization, sensitive data masking, paged criteria queries | 3 | 0 | 0 | 0 | 0.12s |
+| | `ReviewControllerSecurityIntegrationTest` | MockMvc + Spring Security + H2 DB: public listing, create review, admin moderation, audit, 401/403/409/503 | 19 | 0 | 0 | 0 | 8.12s |
+| **Total Workspace** | **Full Multi-Module Reactor Build** | **Full Project Build & Test Suite** | **196** | **0** | **0** | **0** | **02:40 min** |
 
 ### 2.2 Maven Command Evidence
 
-1. **User Service Test Build:**
+1. **Full Reactor Build & Test Suite (`J:\Capstone\StayEase`):**
    ```powershell
-   mvn test -pl user-service --no-transfer-progress
+   mvn clean test
    ```
-   **Result:** `BUILD SUCCESS` (44 tests run, 0 failures, 0 errors, 0 skipped, time: 01:18 min).
+   **Result:** `BUILD SUCCESS` (7/7 projects succeeded: stayease-parent, stayease-backend, gateway-service, user-service, property-service, reservation-service, review-service; 196 tests run, 0 failures, 0 errors, 0 skipped, time: 02:40 min).
 
-2. **Full Multi-Module Reactor Build:**
+2. **Backend Reactor Build & Test Suite (`J:\Capstone\StayEase\backend`):**
    ```powershell
-   mvn test --no-transfer-progress
+   mvn clean test
    ```
-   **Result:** `BUILD SUCCESS` (7/7 modules succeeded: Parent, stayease-common, gateway-service, user-service, property-service, reservation-service, review-service).
+   **Result:** `BUILD SUCCESS` (6/6 projects succeeded: stayease-backend, gateway-service, user-service, property-service, reservation-service, review-service; 196 tests run, 0 failures, 0 errors, 0 skipped).
 
-3. **User Service Packaging:**
+3. **Logback Absence Verification across all modules:**
    ```powershell
-   mvn package -pl user-service -DskipTests --no-transfer-progress
+   mvn dependency:tree "-Dincludes=ch.qos.logback:*"
    ```
-   **Result:** `BUILD SUCCESS` (Produced repackaged bootable fat JAR `user-service-0.1.0-SNAPSHOT.jar` in 7.47s).
+   **Result:** `BUILD SUCCESS` with zero matching dependencies across all modules.
 
----
-
-## 3. Implemented Security & Architectural Capabilities
-
-### 3.1 Authentication & Password Hashing
-- **BCrypt Encryption:** Configured `BCryptPasswordEncoder(12)` in `SecurityConfig`. Raw passwords are never stored or logged.
-- **Forced Public Role:** `AuthService.register()` unconditionally forces `ROLE_USER`. Any `role` field submitted in `RegisterRequest` is ignored.
-- **Generic Login Failure:** In `AuthService.login()` and `GlobalExceptionHandler`, invalid passwords or non-existent emails return generic HTTP 401 with message `"Invalid email or password"`.
-
-### 3.2 Stateless JWT Tokens & 15-Minute Expiration
-- **HMAC-SHA256 Signing:** Signed using a minimum 256-bit key from `JWT_SECRET` (supports Base64 and UTF-8 key material).
-- **Mandatory Claims:** `sub` (User ID), `userId` (Long), `email`, `role`, `tokenVersion`, `iat`, `exp` (15 minutes / 900 seconds), and `iss` (`stayease`).
-- **Fail-Safe Secret Validation:** Startup fails if secret is missing or less than 256 bits.
-
-### 3.3 Server-Side Token Invalidation (`tokenVersion`)
-- `JwtAuthenticationFilter` validates `tokenVersion` claim from the JWT against the live User record in `stayease_user_db`.
-- When a user changes their email (`PATCH /api/users/me/email`) or an admin resets their password (`POST /api/admin/users/{userId}/password-reset`), `tokenVersion` is incremented.
-- Outdated tokens are immediately rejected with HTTP 401 Unauthorized across all protected endpoints.
-
-### 3.4 Backend Authorization & Ownership Checks
-- **Route Authorization:**
-  - Public: `/api/auth/**`, `/actuator/**`, `/internal/**`
-  - Admin-only: `/api/admin/**` requires `ROLE_ADMIN` (`hasAuthority("ROLE_ADMIN")`). Non-admin access returns HTTP 403 Forbidden.
-  - Authenticated: `/api/users/**` requires valid JWT authentication.
-- **Ownership Enforcement:** `/api/users/me` and `/api/users/me/email` strictly operate on `@AuthenticationPrincipal UserPrincipal principal`, preventing any user from accessing or modifying another guest's profile.
-
-### 3.5 Safe Admin-Assisted Password Reset
-- `POST /api/admin/users/{userId}/password-reset` generates a 16-character cryptographically strong temporary password via `PasswordGenerator` (`SecureRandom`).
-- Encodes password with BCrypt, increments `tokenVersion`, records audit log (without password), and returns temporary password once to the admin.
-
-### 3.6 Persistence & Audit Isolation
-- Uses only `stayease_user_db` tables (`users` and `user_audit_events`).
-- Audited actions include: `USER_REGISTERED`, `USER_LOGIN`, `PROFILE_UPDATED`, `EMAIL_CHANGED`, `ADMIN_PASSWORD_RESET`, `ADMIN_BOOTSTRAP`.
-- State snapshots (`beforeJson`, `afterJson`) strictly exclude passwords, hashes, and temporary credentials.
-- Multi-field audit filtering supported via Spring Data JPA Specifications (`from`, `to`, `category`, `actorId`, `entityId`).
-
----
-
-## 4. Admin Bootstrap Procedure (`AdminBootstrapRunner`)
-
-### 4.1 Safety Constraints
-- `AdminBootstrapRunner` is disabled by default (`stayease.admin-bootstrap.enabled=false`).
-- Does not run in normal execution, CI, or test profiles.
-- When activated, the temporary password is printed **only once** to `System.out` and is **never** written to log files, audit records, or source code.
-- If an admin account already exists with the configured email, the runner safely logs a warning and aborts without overwriting.
-
-### 4.2 Exact Manual Bootstrap Procedure
-To initialize the initial administrator locally:
-1. Ensure `stayease_user_db` exists and `database/stayease_user_db/schema.sql` has been executed manually.
-2. In your local terminal or `application-local.yml` (git-ignored), set:
-   ```yaml
-   stayease:
-     admin-bootstrap:
-       enabled: true
-       admin-email: admin@stayease.local
-       admin-full-name: StayEase Administrator
-   ```
-3. Start `user-service`:
+4. **Log4j2 Presence Verification across all modules:**
    ```powershell
-   java -jar user-service/target/user-service-0.1.0-SNAPSHOT.jar
+   mvn dependency:tree "-Dincludes=org.apache.logging.log4j:*"
    ```
-4. Observe stdout for the bootstrap banner:
-   ```
-   ================================================================================
-   === STAYEASE ADMIN BOOTSTRAP SUCCESSFUL
-   === Admin Account Created: admin@stayease.local (User ID: 1)
-   === Role: ROLE_ADMIN
-   === One-Time Bootstrap Password: <GeneratedTemporaryPassword>
-   === CAUTION: Record this password securely now. It will never be displayed again.
-   === Action Required: Set stayease.admin-bootstrap.enabled=false and restart.
-   ================================================================================
-   ```
-5. Record the password, immediately set `stayease.admin-bootstrap.enabled=false`, and restart the service.
+   **Result:** `BUILD SUCCESS` showing `log4j-core:2.23.1`, `log4j-api:2.23.1`, `log4j-slf4j2-impl:2.23.1`, and `log4j-jul:2.23.1` active in all modules.
 
 ---
 
-## 5. Changed Files & Inventory of Implementation
+## 3. Scope Boundaries & Governance Compliance
 
-| File Path | Nature | Purpose |
-|---|---|---|
-| `user-service/src/main/java/com/stayease/user/dto/RegisterRequest.java` | Created | DTO for guest registration with Bean Validation constraints. |
-| `user-service/src/main/java/com/stayease/user/dto/LoginRequest.java` | Created | DTO for authentication requests. |
-| `user-service/src/main/java/com/stayease/user/dto/UserSummaryDto.java` | Created | DTO for user summary in auth responses. |
-| `user-service/src/main/java/com/stayease/user/dto/AuthResponse.java` | Created | Envelope containing token and user summary. |
-| `user-service/src/main/java/com/stayease/user/dto/UserProfileDto.java` | Created | DTO for complete user profile representation. |
-| `user-service/src/main/java/com/stayease/user/dto/UpdateProfileRequest.java` | Created | DTO for updating name, phone, address. |
-| `user-service/src/main/java/com/stayease/user/dto/UpdateEmailRequest.java` | Created | DTO for email change with current password verification. |
-| `user-service/src/main/java/com/stayease/user/dto/AdminUserSummaryDto.java` | Created | DTO for guest search returned to administrators. |
-| `user-service/src/main/java/com/stayease/user/dto/AdminPasswordResetResponse.java` | Created | DTO for admin password reset with one-time temporary password. |
-| `user-service/src/main/java/com/stayease/user/dto/TokenVersionResponse.java` | Created | DTO for internal service-to-service tokenVersion queries. |
-| `user-service/src/main/java/com/stayease/user/entity/User.java` | Created | JPA entity mapping `users` table in `stayease_user_db`. |
-| `user-service/src/main/java/com/stayease/user/entity/UserAuditEvent.java` | Created | JPA entity mapping `user_audit_events` table with JSON snapshots. |
-| `user-service/src/main/java/com/stayease/user/repository/UserRepository.java` | Created | Spring Data JPA repository with email search and tokenVersion projection. |
-| `user-service/src/main/java/com/stayease/user/repository/UserAuditEventRepository.java` | Created | JPA repository with `JpaSpecificationExecutor` for dynamic audit search. |
-| `user-service/src/main/java/com/stayease/user/exception/DuplicateEmailException.java` | Created | Exception mapped to HTTP 409 Conflict. |
-| `user-service/src/main/java/com/stayease/user/exception/InvalidCredentialsException.java` | Created | Exception mapped to generic HTTP 401 Unauthorized. |
-| `user-service/src/main/java/com/stayease/user/exception/ResourceNotFoundException.java` | Created | Exception mapped to HTTP 404 Not Found. |
-| `user-service/src/main/java/com/stayease/user/exception/GlobalExceptionHandler.java` | Created | Controller advice mapping domain exceptions to `ErrorResponse` envelope. |
-| `user-service/src/main/java/com/stayease/user/util/PasswordGenerator.java` | Created | SecureRandom generator for temporary and bootstrap passwords. |
-| `user-service/src/main/java/com/stayease/user/util/PageUtils.java` | Created | Utility converting Spring Data `Page` to `PageResponse` envelope. |
-| `user-service/src/main/java/com/stayease/user/security/UserPrincipal.java` | Created | Principal implementing Spring Security `UserDetails`. |
-| `user-service/src/main/java/com/stayease/user/security/JwtTokenProvider.java` | Created | JJWT 0.12 provider for HMAC-SHA256 signing, claims, and validation. |
-| `user-service/src/main/java/com/stayease/user/security/CorrelationIdFilter.java` | Created | Filter propagating `X-Correlation-ID` in headers and MDC. |
-| `user-service/src/main/java/com/stayease/user/security/JwtAuthenticationFilter.java` | Created | Bearer token authentication filter validating DB `tokenVersion`. |
-| `user-service/src/main/java/com/stayease/user/security/RestAuthenticationEntryPoint.java` | Created | Handler returning 401 `ErrorResponse` in JSON. |
-| `user-service/src/main/java/com/stayease/user/security/RestAccessDeniedHandler.java` | Created | Handler returning 403 `ErrorResponse` in JSON. |
-| `user-service/src/main/java/com/stayease/user/security/SecurityConfig.java` | Created | Spring Security 6 filter chain, route rules, BCrypt (12), stateless session. |
-| `user-service/src/main/java/com/stayease/user/service/UserAuditService.java` | Created | Service recording and querying audit logs with credential exclusion. |
-| `user-service/src/main/java/com/stayease/user/service/AuthService.java` | Created | Service handling registration (forced ROLE_USER) and generic login. |
-| `user-service/src/main/java/com/stayease/user/service/UserService.java` | Created | Service handling profile, email update, tokenVersion increments, admin reset. |
-| `user-service/src/main/java/com/stayease/user/controller/AuthController.java` | Created | Rest controller exposing `/api/auth/register` and `/api/auth/login`. |
-| `user-service/src/main/java/com/stayease/user/controller/UserController.java` | Created | Rest controller exposing `/api/users/me` and `/api/users/me/email`. |
-| `user-service/src/main/java/com/stayease/user/controller/AdminUserController.java` | Created | Rest controller exposing `/api/admin/users`, password reset, and audit trail. |
-| `user-service/src/main/java/com/stayease/user/controller/InternalUserController.java` | Created | Rest controller exposing `/internal/users/{userId}/token-version`. |
-| `user-service/src/main/java/com/stayease/user/bootstrap/AdminBootstrapRunner.java` | Updated | Implemented secure admin account bootstrap with disabled-by-default behavior. |
-| `user-service/src/test/resources/application-test.yml` | Created | Test profile configuration for H2 in-memory DB and disabled Consul. |
-| `user-service/src/test/java/com/stayease/user/security/JwtTokenProviderTest.java` | Created | Unit test suite for JWT token generation and validation. |
-| `user-service/src/test/java/com/stayease/user/util/PasswordGeneratorTest.java` | Created | Unit test suite for password generation complexity and randomness. |
-| `user-service/src/test/java/com/stayease/user/service/AuthServiceTest.java` | Created | Unit test suite for registration and login security rules. |
-| `user-service/src/test/java/com/stayease/user/service/UserServiceTest.java` | Created | Unit test suite for profile, email change, and password reset. |
-| `user-service/src/test/java/com/stayease/user/service/UserAuditServiceTest.java` | Created | Unit test suite for audit persistence and sensitive data exclusion. |
-| `user-service/src/test/java/com/stayease/user/bootstrap/AdminBootstrapRunnerTest.java` | Created | Unit test suite for admin bootstrap execution and idempotency. |
-| `user-service/src/test/java/com/stayease/user/UserControllerSecurityIntegrationTest.java` | Created | Comprehensive integration and security test suite covering all endpoints. |
-| `docs/test-plan.md` | Updated | Recorded Phase 2 passing statuses for test suite `SEC-01` through `SEC-08`. |
-| `docs/requirement-traceability.md` | Updated | Updated traceability matrix with Phase 2 verification statuses for REQ-AUTH-01–07 and REQ-AUD-01. |
-| `docs/implementation-status.md` | Updated | Comprehensive Phase 2 completion report, metrics, and Phase 3 proposal. |
+1. **Phase 5 Isolation:**
+   - Only Review Service implementation, its database script, documentation, and the minimal Gateway route adjustment for `/api/hotels/*/reviews` were touched.
+   - Frontend and external cloud services were not touched.
+2. **Zero Automated Infrastructure Calls:**
+   - No commands were executed against MySQL or Consul.
+   - All tests ran hermetically against in-memory H2 databases under the `test` profile with MySQL compatibility syntax.
+3. **CourseCart Packaging & Pattern Alignment:**
+   - CourseCart package layout adhered to throughout: `controller`, `dto`, `entity`, `enums`, `exception`, `repository`, `service`, `config`, `client`, `security`.
+   - Logging via Apache Commons Logging (`Log log = LogFactory.getLog(...)`) backed by Log4j2.
+   - Message resolution through `MessageSource` and `messages.properties`.
+   - Resilience4j circuit breakers and load-balanced `WebClient.Builder`.
 
 ---
 
-## 6. CourseCart Architectural Reference Alignment & Infrastructure Setup
-
-Following the syllabus-aligned reference architecture in `J:\Capstone\CourseCart`:
-1. **Database Script Locations (`src/main/resources`):**
-   - Each microservice keeps its standalone, self-contained SQL file directly inside its `src/main/resources/`:
-     - `user-service/src/main/resources/user_db.sql`
-     - `property-service/src/main/resources/property_db.sql`
-     - `reservation-service/src/main/resources/reservation_db.sql`
-     - `review-service/src/main/resources/review_db.sql`
-   - Each script contains `CREATE DATABASE IF NOT EXISTS <db>; USE <db>;` along with table DDLs, foreign key constraints, indexes, and reference seeds.
-   - The user runs these SQL scripts directly against their local MySQL database server (`localhost:3306`).
-2. **Spring Cloud Consul Setup (Manual Execution):**
-   - The user starts the local Consul agent manually on `localhost:8500` (`consul agent -dev`).
-   - All services (`gateway-service`, `user-service`, `property-service`, `reservation-service`, `review-service`) configure `spring.cloud.consul.host: localhost` and `port: 8500` with `prefer-ip-address: true`.
-3. **Inter-Service Communication (`WebClient.Builder` Bean in `AppConfig`):**
-   - As in CourseCart, each service now features a dedicated `config/AppConfig.java` containing:
-     ```java
-     @Bean
-     @LoadBalanced
-     public WebClient.Builder webClientBuilder() {
-         return WebClient.builder();
-     }
-     ```
-   - This enables non-blocking, load-balanced inter-service HTTP communication via Consul service IDs (e.g. `http://user-service`), strictly adhering to university/syllabus requirements.
-4. **Offline Test Isolation:**
-   - Automated tests (`mvn clean test`) use an isolated H2 test profile (`application-test.yml`) with `spring.cloud.consul.enabled=false` and `spring.sql.init.mode=never`. Tests never fail due to offline MySQL or Consul.
-
----
-
-## 7. Manual Infrastructure Runtime Instructions
+## 4. Manual Infrastructure Runtime Instructions
 
 1. **MySQL Database Initialization:**
-   - Execute the database script inside each service's resources:
-     ```powershell
-     mysql -u root -p < user-service/src/main/resources/user_db.sql
-     mysql -u root -p < property-service/src/main/resources/property_db.sql
-     mysql -u root -p < reservation-service/src/main/resources/reservation_db.sql
-     mysql -u root -p < review-service/src/main/resources/review_db.sql
-     ```
+   Execute the updated database scripts located inside each service's resources:
+   ```powershell
+   mysql -u root -p < backend/user-service/src/main/resources/user_db.sql
+   mysql -u root -p < backend/property-service/src/main/resources/property_db.sql
+   mysql -u root -p < backend/reservation-service/src/main/resources/reservation_db.sql
+   mysql -u root -p < backend/review-service/src/main/resources/review_db.sql
+   ```
 2. **Consul Service Discovery:**
-   - Launch your local Consul agent:
-     ```powershell
-     consul agent -dev
-     ```
-   - Verify Consul UI at `http://localhost:8500/ui`.
-3. **JWT Secret Configuration:**
-   - Set the runtime environment variable:
-     ```powershell
-     $env:JWT_SECRET = "your-256-bit-secret-key-must-be-at-least-32-characters-long"
-     ```
+   ```powershell
+   consul agent -dev
+   ```
+3. **Microservice Startup:**
+   ```powershell
+   java -jar backend/gateway-service/target/gateway-service-0.1.0-SNAPSHOT.jar
+   java -jar backend/user-service/target/user-service-0.1.0-SNAPSHOT.jar
+   java -jar backend/property-service/target/property-service-0.1.0-SNAPSHOT.jar
+   java -jar backend/reservation-service/target/reservation-service-0.1.0-SNAPSHOT.jar
+   java -jar backend/review-service/target/review-service-0.1.0-SNAPSHOT.jar
+   ```
 
 ---
 
-## 7. Known Limitations & Scope Preservation
+## 5. Next Steps — Awaiting Authorization for Phase 6
 
-- **No Refresh Tokens:** As agreed in `docs/decisions.md` §7.2, access tokens have a strict 15-minute lifetime. Refresh token flows are excluded.
-- **No Email Delivery:** Email change and password resets operate deterministically via API response; SMTP email delivery is out of scope.
-- **No Account Lockout / Rate Limiting:** As agreed in architectural decisions, brute-force throttling is deferred beyond the baseline reference scope.
-- **Fail-Closed Dependency:** Other services verifying JWTs will depend on User Service `/internal/users/{userId}/token-version`. When User Service is offline, those services must fail closed.
+Phase 5 Review Service implementation, testing, and requirement verification are complete.
+
+**STOPPED at Completion Gate. Awaiting user review and authorization to proceed.**
+   - Logging via Apache Commons Logging (`Log log = LogFactory.getLog(...)`) backed by Log4j2.
+   - Message resolution through `MessageSource` and `messages.properties`.
+   - Resilience4j circuit breakers and load-balanced `WebClient.Builder`.
 
 ---
 
-## 8. Proposed Phase 3 Scope (Pending User Approval)
+## 4. Manual Infrastructure Runtime Instructions
 
-Phase 2 is complete. STOPPING now per Phase 2 Completion Gate.
+1. **MySQL Database Initialization:**
+   Execute the updated database scripts located inside each service's resources:
+   ```powershell
+   mysql -u root -p < backend/user-service/src/main/resources/user_db.sql
+   mysql -u root -p < backend/property-service/src/main/resources/property_db.sql
+   mysql -u root -p < backend/reservation-service/src/main/resources/reservation_db.sql
+   mysql -u root -p < backend/review-service/src/main/resources/review_db.sql
+   ```
+2. **Consul Service Discovery:**
+   ```powershell
+   consul agent -dev
+   ```
+3. **Microservice Startup:**
+   ```powershell
+   java -jar backend/gateway-service/target/gateway-service-0.1.0-SNAPSHOT.jar
+   java -jar backend/user-service/target/user-service-0.1.0-SNAPSHOT.jar
+   java -jar backend/property-service/target/property-service-0.1.0-SNAPSHOT.jar
+   java -jar backend/reservation-service/target/reservation-service-0.1.0-SNAPSHOT.jar
+   ```
 
-Upon review and explicit authorization to proceed to Phase 3:
-- **Phase 3 Focus:** Property Service Implementation
-  - Hotel catalog search with destination, price range, rating, and amenity filters (`GET /api/hotels`).
-  - Hotel details and room-type catalog endpoints.
-  - Physical room housekeeping (`CLEAN`, `DIRTY`, `INSPECTING`) and operational status transitions (`OPERATIONAL`, `OUT_OF_SERVICE`).
-  - Internal sellable capacity endpoint for Reservation Service (`GET /internal/properties/room-types/{roomTypeId}/capacity`).
-  - Strict preservation of unidirectional call topology (Property Service **never** calls Reservation Service).
+---
+
+## 5. Next Steps — Awaiting Authorization for Phase 5 / Phase 6
+
+Phase 4 implementation, testing, and requirement verification are complete.
+
+**STOPPED at Completion Gate. Awaiting user review and authorization to proceed.**

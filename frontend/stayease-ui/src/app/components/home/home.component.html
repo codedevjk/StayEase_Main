@@ -1,0 +1,280 @@
+<!-- Hero Section with MakeMyTrip Style Booking Bar -->
+<section class="hero-gradient py-5 text-white">
+  <div class="container py-4">
+    <div class="row align-items-center mb-4">
+      <div class="col-lg-8">
+        <span class="badge bg-warning text-dark fw-bold mb-2 px-3 py-2 text-uppercase tracking-wide">
+          <i class="bi bi-stars me-1"></i> Premier Hospitality Network
+        </span>
+        <h1 class="display-4 font-serif fw-bold text-white mb-2">
+          Experience Unrivaled Comfort & Elegance
+        </h1>
+        <p class="lead text-light opacity-90 mb-0">
+          Book verified luxury resorts, boutique villas, and business hotels across India with instant confirmation and 100% price transparency.
+        </p>
+      </div>
+    </div>
+
+    <!-- Segmented Search Card (MakeMyTrip Style Layout with Original Fields) -->
+    <div class="search-card-container p-3 p-md-4 mt-3">
+      <form (ngSubmit)="onSearch()">
+        <div class="row g-0 align-items-stretch">
+          
+          <!-- Segment 1: City, Property Name Or Location -->
+          <div class="col-lg-4 col-md-6 border-end search-segment-box">
+            <label class="search-segment-label">
+              <i class="bi bi-geo-alt-fill text-danger me-1"></i> City, Property Name Or Location
+            </label>
+            <input
+              type="text"
+              [(ngModel)]="searchCity"
+              name="city"
+              class="form-control form-control-lg border-0 bg-transparent px-0 fw-bold fs-5 text-dark search-box-field"
+              placeholder="e.g. Goa, Mumbai, Delhi">
+            <div class="search-segment-sub text-muted">Where are you going?</div>
+          </div>
+
+          <!-- Segment 2: Check-In -->
+          <div class="col-lg-2 col-md-3 col-6 border-end search-segment-box">
+            <div class="d-flex justify-content-between align-items-center">
+              <label class="search-segment-label">
+                <i class="bi bi-calendar-event text-primary me-1"></i> Check-In
+              </label>
+              <i class="bi bi-chevron-down text-primary small"></i>
+            </div>
+            <input
+              type="date"
+              [(ngModel)]="checkInDate"
+              (change)="validateDates()"
+              name="checkIn"
+              [min]="minDate"
+              class="form-control form-control-lg border-0 bg-transparent px-0 fw-bold fs-5 text-dark search-box-field">
+            <div class="search-segment-sub text-muted">{{ getDayOfWeek(checkInDate) || 'Select date' }}</div>
+
+            <!-- Date Error Span -->
+            <span *ngIf="checkInError && (formSubmitted || checkInDate)" class="text-danger small mt-1 d-block fw-semibold">
+              <i class="bi bi-exclamation-circle me-1"></i> {{ checkInError }}
+            </span>
+          </div>
+
+          <!-- Segment 3: Check-Out -->
+          <div class="col-lg-2 col-md-3 col-6 border-end search-segment-box">
+            <div class="d-flex justify-content-between align-items-center">
+              <label class="search-segment-label">
+                <i class="bi bi-calendar-check text-primary me-1"></i> Check-Out
+              </label>
+              <i class="bi bi-chevron-down text-primary small"></i>
+            </div>
+            <input
+              type="date"
+              [(ngModel)]="checkOutDate"
+              (change)="validateDates()"
+              name="checkOut"
+              [min]="checkInDate || minDate"
+              class="form-control form-control-lg border-0 bg-transparent px-0 fw-bold fs-5 text-dark search-box-field">
+            <div class="search-segment-sub text-muted">{{ getDayOfWeek(checkOutDate) || 'Select date' }}</div>
+
+            <!-- Date Error Span -->
+            <span *ngIf="checkOutError && (formSubmitted || checkOutDate)" class="text-danger small mt-1 d-block fw-semibold">
+              <i class="bi bi-exclamation-circle me-1"></i> {{ checkOutError }}
+            </span>
+          </div>
+
+          <!-- Segment 4: Rooms & Guests -->
+          <div class="col-lg-4 col-md-12 search-segment-box">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <label class="search-segment-label">
+                <i class="bi bi-people-fill text-primary me-1"></i> Rooms & Guests
+              </label>
+              <span *ngIf="adults >= 1" class="badge bg-primary">{{ requiredRooms }} Room(s)</span>
+            </div>
+            
+            <div class="row g-2 align-items-center">
+              <div class="col-6">
+                <label class="form-label small text-muted fw-bold mb-0">Adults (11+y)</label>
+                <input
+                  type="number"
+                  [(ngModel)]="adults"
+                  (input)="validateGuests()"
+                  (change)="validateGuests()"
+                  name="adults"
+                  min="0"
+                  max="20"
+                  class="form-control form-control-sm fw-bold">
+              </div>
+              <div class="col-6">
+                <label class="form-label small text-muted fw-bold mb-0">Child (≤10y)</label>
+                <input
+                  type="number"
+                  [(ngModel)]="children"
+                  (input)="validateGuests()"
+                  (change)="validateGuests()"
+                  name="children"
+                  min="0"
+                  max="10"
+                  class="form-control form-control-sm fw-bold">
+              </div>
+            </div>
+
+            <!-- Subtext & Allocation note -->
+            <div class="search-segment-sub text-muted mt-1" *ngIf="adults >= 1">
+              {{ requiredRooms }} Room(s) · {{ adults }} Adult{{ adults > 1 ? 's' : '' }}<span *ngIf="children > 0">, {{ children }} Child{{ children > 1 ? 'ren' : '' }}</span>
+            </div>
+
+            <!-- Adult Validation Error Span -->
+            <span *ngIf="guestError || adults < 1" class="text-danger small mt-1 d-block fw-semibold">
+              <i class="bi bi-exclamation-octagon-fill me-1"></i> At least 1 adult is required to make a booking. Child-only bookings are not allowed.
+            </span>
+          </div>
+
+        </div>
+
+        <!-- Real-world Room Allocation Notice -->
+        <div class="mt-3 d-flex flex-wrap align-items-center gap-2 small">
+          <span class="badge bg-light text-dark border">
+            <i class="bi bi-door-open-fill text-primary me-1"></i> Requires {{ requiredRooms }} Room(s) (Max 2 adults/room)
+          </span>
+          <span *ngIf="children > 0" class="badge bg-light text-secondary border">
+            <i class="bi bi-check-circle-fill text-success me-1"></i> Children ≤10 yrs stay with adults (No extra room)
+          </span>
+        </div>
+
+        <!-- Trending Searches (Quick City Search) -->
+        <div class="d-flex flex-wrap align-items-center gap-2 mt-3 pt-3 border-top small text-muted">
+          <span class="fw-bold me-1 text-dark"><i class="bi bi-compass text-primary me-1"></i> Trending Searches:</span>
+          <button type="button" (click)="quickCitySearch('Jaipur')" class="btn btn-sm btn-outline-secondary rounded-pill py-0 px-2" title="Heritage Stay">Jaipur</button>
+          <button type="button" (click)="quickCitySearch('Goa')" class="btn btn-sm btn-outline-secondary rounded-pill py-0 px-2" title="Beach Holiday">Goa</button>
+          <button type="button" (click)="quickCitySearch('Varanasi')" class="btn btn-sm btn-outline-secondary rounded-pill py-0 px-2" title="Temple Tourism">Varanasi</button>
+          <button type="button" (click)="quickCitySearch('Bangalore')" class="btn btn-sm btn-outline-secondary rounded-pill py-0 px-2" title="Business Travel">Bangalore</button>
+          <button type="button" (click)="quickCitySearch('Manali')" class="btn btn-sm btn-outline-secondary rounded-pill py-0 px-2" title="Nature Escape">Manali</button>
+          <button type="button" (click)="quickCitySearch('Coorg')" class="btn btn-sm btn-outline-secondary rounded-pill py-0 px-2" title="Nature Escape">Coorg</button>
+          <button type="button" (click)="quickCitySearch('Udaipur')" class="btn btn-sm btn-outline-secondary rounded-pill py-0 px-2" title="Heritage Stay">Udaipur</button>
+          <button type="button" (click)="quickCitySearch('Mumbai')" class="btn btn-sm btn-outline-secondary rounded-pill py-0 px-2" title="Business Travel">Mumbai</button>
+        </div>
+
+        <!-- Prominent Centered SEARCH Pill Button -->
+        <div class="text-center mt-3 position-relative" style="z-index: 25;">
+          <button
+            type="submit"
+            [disabled]="adults < 1 || !!checkInError || !!checkOutError"
+            class="btn btn-primary rounded-pill search-action-btn fw-bold text-uppercase">
+            <i class="bi bi-search me-2"></i> SEARCH
+          </button>
+        </div>
+      </form>
+    </div>
+
+  </div>
+</section>
+
+<!-- Value Pillars -->
+<section class="py-5 bg-white border-bottom">
+  <div class="container">
+    <div class="row g-4 text-center">
+      <div class="col-md-4">
+        <div class="p-3">
+          <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3 shadow-sm" style="width: 56px; height: 56px; font-size: 1.5rem;">
+            <i class="bi bi-clock-history"></i>
+          </div>
+          <h5 class="fw-bold text-dark">10-Minute Hold Guarantee</h5>
+          <p class="text-muted small mb-0">Prepaid reservations hold your selected room inventory for 10 minutes, ensuring zero double-booking while you complete payment.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="p-3">
+          <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3 shadow-sm" style="width: 56px; height: 56px; font-size: 1.5rem;">
+            <i class="bi bi-patch-check"></i>
+          </div>
+          <h5 class="fw-bold text-dark">100% Verified Guest Reviews</h5>
+          <p class="text-muted small mb-0">Only guests with checked-out stays can submit ratings and feedback, guaranteeing completely honest property reviews.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="p-3">
+          <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3 shadow-sm" style="width: 56px; height: 56px; font-size: 1.5rem;">
+            <i class="bi bi-shield-lock"></i>
+          </div>
+          <h5 class="fw-bold text-dark">Flexible 24-Hour Cancellation</h5>
+          <p class="text-muted small mb-0">Cancel with a 100% full refund up to 24 hours prior to scheduled 14:00 check-in time with automated processing.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Featured Hotels Section -->
+<section class="py-5 bg-light">
+  <div class="container">
+    <div class="d-flex justify-content-between align-items-end mb-4">
+      <div>
+        <h2 class="font-serif fw-bold text-dark mb-1">Featured Luxury Properties</h2>
+        <p class="text-muted small mb-0">Top-rated hotels curated for exceptional hospitality and prime locations</p>
+      </div>
+      <a routerLink="/hotels" class="btn btn-outline-primary btn-sm fw-semibold">
+        View All Hotels <i class="bi bi-arrow-right ms-1"></i>
+      </a>
+    </div>
+
+    <app-loading-spinner *ngIf="loading" message="Loading curated hotels..."></app-loading-spinner>
+
+    <div *ngIf="!loading && featuredHotels.length === 0" class="card shadow-sm border p-4 text-center">
+      <app-empty-state
+        icon="bi bi-buildings"
+        title="No featured hotels currently available"
+        message="Browse all destinations to discover newly onboarded StayEase locations."
+        actionText="Browse Catalog"
+        actionRoute="/hotels">
+      </app-empty-state>
+    </div>
+
+    <div *ngIf="!loading && featuredHotels.length > 0" class="row g-4">
+      <div *ngFor="let hotel of featuredHotels" class="col-lg-4 col-md-6">
+        <div class="card shadow-sm border h-100 overflow-hidden">
+          <!-- Hotel Image with Badges -->
+          <div class="position-relative overflow-hidden" style="height: 220px;">
+            <img [src]="getHotelImage(hotel)" [alt]="hotel.name" class="w-100 h-100" style="object-fit: cover;" loading="lazy">
+            <div class="position-absolute top-0 end-0 m-3">
+              <span class="badge bg-dark bg-opacity-75 text-warning fw-bold px-2 py-1 shadow-sm">
+                <i class="bi bi-star-fill text-warning me-1"></i> {{ hotel.starRating }} Star
+              </span>
+            </div>
+            <div class="position-absolute bottom-0 start-0 m-3 text-white">
+              <span class="badge bg-primary bg-opacity-90 fw-semibold px-2 py-1 shadow-sm">
+                <i class="bi bi-geo-alt-fill me-1"></i> {{ hotel.destination || hotel.city || 'India' }}
+              </span>
+            </div>
+          </div>
+
+          <div class="card-body p-4 d-flex flex-column">
+            <h5 class="fw-bold font-serif text-dark mb-1">{{ hotel.name }}</h5>
+            <p class="text-muted small mb-2 text-truncate" title="{{ hotel.address }}">
+              <i class="bi bi-geo-alt me-1 text-danger"></i> {{ hotel.address }}
+            </p>
+
+            <!-- Amenities chips -->
+            <div *ngIf="hotel.amenities && hotel.amenities.length > 0" class="d-flex flex-wrap gap-1 mb-3">
+              <span *ngFor="let am of hotel.amenities.slice(0, 3)" class="badge bg-light text-secondary border small">
+                {{ am.name || am }}
+              </span>
+              <span *ngIf="hotel.amenities.length > 3" class="badge bg-light text-muted border small">
+                +{{ hotel.amenities.length - 3 }} more
+              </span>
+            </div>
+
+            <!-- Price & Button -->
+            <div class="d-flex justify-content-between align-items-center pt-3 border-top mt-auto">
+              <div>
+                <span class="text-muted small d-block">Starting from</span>
+                <span class="fw-bold fs-5 text-primary">₹{{ (hotel.startingNightlyRate || hotel.startingPrice || 3200) | number:'1.0-0' }}</span>
+                <span class="text-muted small"> / night</span>
+              </div>
+              <a [routerLink]="['/hotels', hotel.id]" class="btn btn-primary btn-sm px-3 shadow-sm">
+                View Rooms <i class="bi bi-chevron-right ms-1"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
